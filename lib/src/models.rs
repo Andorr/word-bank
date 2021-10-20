@@ -1,18 +1,26 @@
+use std::fmt;
+
 use chrono::{DateTime, Utc};
 
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum WordType {
-    None,
-    Noun,
-    Pronoun,
-    Verb,
-    Adjective,
-    Adverb,
-    Preposition,
-    Conjunction,
-    Interjection,
+    NONE,
+    NOUN,
+    PRONOUN,
+    VERB,
+    ADJECTIVE,
+    ADVERB,
+    PREPOSITION,
+    CONJUNCTION,
+    INTERJECTION,
+}
+
+impl fmt::Display for WordType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -34,7 +42,7 @@ impl Word {
         Word {
             id: String::new(),
             value: value.to_string(),
-            kind: WordType::None,
+            kind: WordType::NONE,
             tags: Vec::new(),
             translations: Vec::new(),
             created_at: Utc::now(),
@@ -74,4 +82,46 @@ impl Translation {
         self.created_at = time;
         self.updated_at = time;
     }    
+}
+
+pub struct WordFilterOptions {
+    pub word: Option<String>,
+    pub kind: Option<WordType>,
+    pub tags: Option<Vec<String>>
+}
+
+impl WordFilterOptions {
+    pub fn empty() -> WordFilterOptions {
+        WordFilterOptions { word: None, kind: None, tags: None }
+    }
+}
+
+pub struct PaginationOptions {
+    pub limit: usize,
+    pub page: usize,
+}
+
+impl PaginationOptions {
+
+    pub fn new(limit: usize, page: usize) -> PaginationOptions {
+        PaginationOptions {
+            limit: limit,
+            page: page,
+        }
+    }
+
+    pub fn default() -> PaginationOptions {
+        PaginationOptions { limit: 10, page: 1 }
+    }
+
+    pub fn skip(&self) -> usize {
+        return self.limit * (self.page - 1);
+    }
+}
+
+pub struct PageResult<T> {
+    pub total: usize,
+    pub page: usize,
+    pub count: usize,
+    pub results: Vec<T>,
 }
