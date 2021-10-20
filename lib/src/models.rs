@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WordType {
     NONE,
     NOUN,
