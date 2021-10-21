@@ -1,10 +1,12 @@
-use lib::{DBOptions, PaginationOptions, WordBankClient, WordFilterOptions, WordType};
+use lib::{DBOptions, PaginationOptions, WordBankClient, WordQueryOptions, WordType};
 use std::env;
 
 extern crate dotenv;
 
 #[test]
 fn test_client_list_words() {
+    // TODO: This is a bad test, it "depends" on existing data to be beneficial
+
     dotenv::dotenv().ok();
 
     let db_uri = env::var("WORDBANK_URI").unwrap();
@@ -18,7 +20,7 @@ fn test_client_list_words() {
 
     let expected_word = "살다".to_string();
 
-    let result = client.list_words(WordFilterOptions{ 
+    let result = client.query_words(WordQueryOptions{ 
         word: Some(expected_word.clone()), 
         kind: Some(WordType::VERB), 
         tags: None 

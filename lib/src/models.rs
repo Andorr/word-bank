@@ -84,18 +84,20 @@ impl Translation {
     }    
 }
 
-pub struct WordFilterOptions {
+#[derive(Clone)]
+pub struct WordQueryOptions {
     pub word: Option<String>,
     pub kind: Option<WordType>,
     pub tags: Option<Vec<String>>
 }
 
-impl WordFilterOptions {
-    pub fn empty() -> WordFilterOptions {
-        WordFilterOptions { word: None, kind: None, tags: None }
+impl WordQueryOptions {
+    pub fn empty() -> WordQueryOptions {
+        WordQueryOptions { word: None, kind: None, tags: None }
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct PaginationOptions {
     pub limit: usize,
     pub page: usize,
@@ -106,7 +108,7 @@ impl PaginationOptions {
     pub fn new(limit: usize, page: usize) -> PaginationOptions {
         PaginationOptions {
             limit: limit,
-            page: page,
+            page: if page != 0 { page } else { 1 }, // Page == 0 is not allowed
         }
     }
 

@@ -1,0 +1,62 @@
+use mongodb::{IndexModel, bson::doc};
+
+use crate::DBOptions;
+
+use super::MongoDBClient;
+
+pub fn initialize(options: DBOptions) -> Result<(), ()> {
+
+    let client: MongoDBClient = match MongoDBClient::from_options(&options) {
+        Ok(c) => c,
+        Err(_) => return Err(()),
+    };
+
+    println!("Creating Word index");
+    let word_col = client.word_collection();
+    let mut word_index = 
+    IndexModel::builder()
+    .keys(doc!{
+        "value": 1,
+        "kind": 1,
+        "created_at": -1, // Descending index
+    })
+    .build();
+    
+    match word_col.create_index(word_index, None) {
+        Ok(_) => {},
+        Err(_) => return Err(()),
+    };
+
+    word_index = 
+    IndexModel::builder()
+    .keys(doc!{
+        "value": 1,
+        "created_at": -1, // Descending index
+    })
+    .build();
+    match word_col.create_index(word_index, None) {
+        Ok(_) => {},
+        Err(_) => return Err(()),
+    };
+
+    println!("Creating Translation index");
+    
+    let translation_index = 
+    IndexModel::builder()
+    .keys(doc!{
+        "value": 1,
+        "word_id": 1,
+        "created_at": -1, // Descending index
+    })
+    .build();
+    
+    
+    
+    let translation_col = client.translation_collection();
+    match translation_col.create_index(translation_index, None) {
+        Ok(_) => {},
+        Err(_) => return Err(()),
+    };
+
+    Ok(())
+}
