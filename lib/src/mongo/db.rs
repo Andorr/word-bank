@@ -39,5 +39,39 @@ pub fn initialize(options: DBOptions) -> Result<(), ()> {
         Err(_) => return Err(()),
     };
 
+    word_index = 
+    IndexModel::builder()
+    .keys(doc!{
+        "value": 1,
+    })
+    .build();
+    match word_col.create_index(word_index, None) {
+        Ok(_) => {},
+        Err(_) => return Err(()),
+    };
+
+    word_index = 
+    IndexModel::builder()
+    .keys(doc!{
+        "translations.value": 1,
+    })
+    .build();
+    match word_col.create_index(word_index, None) {
+        Ok(_) => {},
+        Err(_) => return Err(()),
+    };
+
+    word_index = 
+    IndexModel::builder()
+    .keys(doc!{
+        "translations.value": 1,
+        "created_at": -1, // Descending index
+    })
+    .build();
+    match word_col.create_index(word_index, None) {
+        Ok(_) => {},
+        Err(_) => return Err(()),
+    };
+
     Ok(())
 }

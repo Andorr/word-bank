@@ -1,4 +1,4 @@
-use mongodb::bson::{DateTime, Document, doc};
+use mongodb::bson::{self, DateTime, Document, doc};
 use serde::{Serialize, Deserialize};
 
 use mongodb::bson::serde_helpers::uuid_as_binary;
@@ -93,6 +93,13 @@ impl WordQueryOptions {
     pub fn as_query_doc(self) -> Document {
         let mut document = Document::new();
         
+        if let Some(query) = self.query {
+            // document.insert("value", bson::Regex { pattern: query.clone(), options: "i".to_string()});
+            document.insert("$or", vec![
+                doc!{"value": bson::Regex { pattern: query.clone(), options: "i".to_string()}},
+                doc!{"translations.value": bson::Regex { pattern: query, options: "i".to_string() }},
+            ]);
+        }
         if let Some(word) = self.word {
             document.insert("value", word);
         }
@@ -102,6 +109,7 @@ impl WordQueryOptions {
         if let Some(tags) = self.tags {
             document.insert("tags", tags);
         }
+    
 
         document
     }

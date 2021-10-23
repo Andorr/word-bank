@@ -21,10 +21,11 @@ fn test_client_list_words() {
     let expected_word = "살다".to_string();
 
     let result = client.query_words(WordQueryOptions{ 
-        word: Some(expected_word.clone()), 
+        query: Some(expected_word.clone()),
+        word: None, // Some(expected_word.clone()), 
         kind: Some(WordType::VERB), 
         tags: None 
-    }, PaginationOptions::new(2, 2));
+    }, PaginationOptions::new(2, 1));
     assert!(result.is_ok());
 
     let page_result = result.unwrap();
@@ -33,6 +34,7 @@ fn test_client_list_words() {
     assert!(page_result.results.len() <= 2);
 
     page_result.results.iter().for_each(|w| {
+        println!("{:?}", w);
         assert_eq!(expected_word, w.value);
         assert_eq!(WordType::VERB, w.kind);
     });

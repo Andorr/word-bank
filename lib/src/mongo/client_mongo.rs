@@ -1,5 +1,5 @@
 use crate::{DB, Translation, Word, models::{PageResult, PaginationOptions, WordQueryOptions}};
-use mongodb::{bson::{self, Bson, DateTime, Document, doc, to_document}, sync::{Client, ClientSession, Collection, Database}};
+use mongodb::{bson::{self, Bson, DateTime, Document, doc, to_document}, options::FindOptions, sync::{Client, ClientSession, Collection, Database}};
 use uuid::Uuid;
 
 use super::models::{WordDBM, TranslationDBM};
@@ -91,21 +91,21 @@ impl DB for MongoDBClient {
     
     fn query_words(&self, query_options: WordQueryOptions, pagination: PaginationOptions) -> Result<PageResult<Word>, ()> {
         let col = self.word_collection();
-        
-        let pipeline: Vec<Document> = vec![
-            query_options.clone().as_match_doc(),
-            doc!{"$sort": doc!{"created_at": -1}},
-            pagination.as_skip_doc(),
-            pagination.as_limit_doc(),
-        ];
+    
+        let filter_options = FindOptions::builder()
+            .sort(doc!{"created_at": -1})
+            .skip(pagination.skip() as u64)
+            .limit(pagination.limit as i64)
+            .build();
 
-        let result = col.aggregate(pipeline, None);
+        let result = col.find(query_options.clone().as_query_doc(), filter_options);
         if result.is_err() {
-            println!("{:?}", result.unwrap_err());
+            println!("Find: {:?}", result.unwrap_err());
             return Err(())
         }
         let result_all = col.count_documents(query_options.as_query_doc(), None);
         if result.is_err() {
+            println!("Count: {:?}", result.unwrap_err());
             return Err(())
         }
         let cursor = result.unwrap();
@@ -114,7 +114,6 @@ impl DB for MongoDBClient {
         let words: Vec<Word> = cursor.into_iter()
             .filter(|w| w.is_ok())
             .map(|w| w.unwrap())
-            .map(|w| bson::from_document(w).unwrap())
             .map(|wdbms: WordDBM| wdbms.into())
             .collect();
 

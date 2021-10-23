@@ -80,6 +80,7 @@ impl Translation {
 
 #[derive(Clone)]
 pub struct WordQueryOptions {
+    pub query: Option<String>,
     pub word: Option<String>,
     pub kind: Option<WordType>,
     pub tags: Option<Vec<String>>
@@ -87,7 +88,7 @@ pub struct WordQueryOptions {
 
 impl WordQueryOptions {
     pub fn empty() -> WordQueryOptions {
-        WordQueryOptions { word: None, kind: None, tags: None }
+        WordQueryOptions { query: None, word: None, kind: None, tags: None }
     }
 }
 
