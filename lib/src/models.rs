@@ -1,4 +1,5 @@
 use std::fmt;
+use uuid::{self, Uuid};
 
 use chrono::{DateTime, Utc};
 
@@ -25,8 +26,7 @@ impl fmt::Display for WordType {
 
 #[derive(Debug, Clone)]
 pub struct Word {
-    pub id: String,
-    
+    pub id: Uuid,
     pub value: String,
     pub kind: WordType, 
     pub tags: Vec<String>,
@@ -40,7 +40,7 @@ pub struct Word {
 impl Word {
     pub fn from_value(value: &str) -> Word {
         Word {
-            id: String::new(),
+            id: Uuid::new_v4(),
             value: value.to_string(),
             kind: WordType::NONE,
             tags: Vec::new(),
@@ -57,31 +57,25 @@ impl Word {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Translation {
-    pub id: String,
-    pub word_id: String,
+    pub id: Uuid,
     pub value: String,
-
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 impl Translation {
     pub fn from_value(value: &str) -> Translation {
-        Translation {
-            id: String::new(),
-            value: value.to_string(),
-            word_id: String::new(),
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+        // Capitialize input
+        let mut translation = String::from(value);
+        if let Some(c) = (translation).get_mut(0..1) {
+            c.make_ascii_uppercase();
         }
-    }
 
-    pub fn update_time(&mut self, time: DateTime<Utc>) {
-        self.created_at = time;
-        self.updated_at = time;
-    }    
+        Translation {
+            id: Uuid::new_v4(),
+            value: translation.to_string(),
+        }
+    } 
 }
 
 #[derive(Clone)]
@@ -121,9 +115,19 @@ impl PaginationOptions {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PageResult<T> {
     pub total: usize,
     pub page: usize,
     pub count: usize,
     pub results: Vec<T>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WordUpdateOptions {
+    pub id: Uuid,
+    pub word: Option<String>,
+    pub kind: Option<WordType>,
+    pub tags: Option<Vec<String>>,
+    pub translations: Option<Vec<Translation>>,
 }

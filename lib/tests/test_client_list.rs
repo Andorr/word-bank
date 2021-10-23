@@ -33,7 +33,6 @@ fn test_client_list_words() {
     assert!(page_result.results.len() <= 2);
 
     page_result.results.iter().for_each(|w| {
-        assert!(w.id.len() > 0);
         assert_eq!(expected_word, w.value);
         assert_eq!(WordType::VERB, w.kind);
     });

@@ -1,11 +1,11 @@
 use crate::{DB, Translation, Word, models::{PageResult, PaginationOptions, WordQueryOptions}};
-use mongodb::{bson::{self, Document, doc}, sync::{Client, ClientSession, Collection, Database}};
+use mongodb::{bson::{self, Bson, DateTime, Document, doc, to_document}, sync::{Client, ClientSession, Collection, Database}};
+use uuid::Uuid;
 
 use super::models::{WordDBM, TranslationDBM};
 
 
 const WORD_COL: &'static str = "words"; 
-const TRANSLATION_COL: &'static str = "translations"; 
 
 pub struct DBOptions<'a> {
     pub uri: &'a str,
@@ -49,22 +49,16 @@ impl MongoDBClient {
     pub(crate) fn word_collection(&self) -> Collection<WordDBM> {
         self.db.collection::<WordDBM>(WORD_COL)
     }
-    
-    pub(crate) fn translation_collection(&self) -> Collection<TranslationDBM> {
-        self.db.collection::<TranslationDBM>(TRANSLATION_COL)
-    }
 }
 
 impl DB for MongoDBClient {
-    fn insert_word(&self, word: &mut Word) -> Result<String, ()> {
+    fn insert_word(&self, word: &mut Word) -> Result<Uuid, ()> {
         let wdbm: WordDBM = word.into();
 
         let collection = self.word_collection();
         match collection.insert_one(wdbm, None) {
-            Ok(result) => {
-                let id = result.inserted_id.as_object_id().unwrap().to_string();
-                word.id = id;
-                Ok(word.id.clone())
+            Ok(_) => {
+                Ok(word.id)
             }
             Err(err) => {
                 println!("{:?}", err);
@@ -73,15 +67,20 @@ impl DB for MongoDBClient {
         }
     }
     
-    fn insert_translation(&self, translation: &mut Translation) -> Result<String, ()> {
-        let tdbm: TranslationDBM = translation.into();
+    fn insert_translation(&self, word_id: String, translation: &mut Translation) -> Result<Uuid, ()> {
+        translation.id = Uuid::new_v4();
+        let tdbm: TranslationDBM = (&*translation).into();
 
-        let collection = self.translation_collection();
-        match collection.insert_one(tdbm, None) {
-            Ok(result) => {
-                let id = result.inserted_id.as_object_id().unwrap().to_string();
-                translation.id = id;
-                Ok(translation.id.clone())
+        let word_col = self.word_collection();
+        let update_result = word_col.update_one(
+            doc!{"_id": Bson::String(word_id)}, 
+            doc!{"$push": doc!{
+                "translations": to_document(&tdbm).unwrap(),
+            }},None);
+
+        match update_result {
+            Ok(_) => {
+                Ok(translation.id)
             }   
             Err(err) => {
                 println!("{:?}", err);
@@ -89,78 +88,15 @@ impl DB for MongoDBClient {
             }
         }
     }
-
-    fn insert_word_with_translations(&self, word: &mut Word, translations: &mut Vec<Translation>) -> Result<String, ()> {
-        // Set up session, transactions and collections
-        let result  = self.start_transaction();
-        if result.is_err() {
-            return Err(())
-        }
-        let mut session = result.unwrap();
-
-        let word_col = self.word_collection();
-        let translation_col = self.translation_collection();
-        
-
-        // Insert word
-        let wdbm: WordDBM = word.into(); 
-        let word_result = match word_col.insert_one_with_session(wdbm, None, &mut session) {
-            Ok(r) => r,
-            Err(_) => {
-                let _ = session.abort_transaction();
-                return Err(())
-            }
-        };
-        let word_id = word_result.inserted_id.as_object_id().unwrap();
-        word.id = word_id.to_string();
-
-        // Update translation foreign keys
-        translations.iter_mut().for_each(|t| t.word_id = word.id.clone());
-
-        // Insert translations
-        let tdbms: Vec<TranslationDBM> = translations.iter_mut()
-            .map::<TranslationDBM, _>(|t| t.into())
-            .collect();
-
-        let translation_result = match translation_col.insert_many_with_session(tdbms, None, &mut session) {
-            Ok(r) => r,
-            Err(_) => {
-                let _  = session.abort_transaction();
-                return Err(())
-            }
-        };
-
-        // Update translation ids
-        translation_result.inserted_ids
-            .iter()
-            .for_each(|(index, id)| {
-                translations[*index].id = id.as_object_id().unwrap().to_string();
-            });
-
-        if let Err(_) = session.commit_transaction() {
-            return Err(())
-        }
-
-
-        Ok(word.id.clone())
-    }
-
+    
     fn query_words(&self, query_options: WordQueryOptions, pagination: PaginationOptions) -> Result<PageResult<Word>, ()> {
         let col = self.word_collection();
         
         let pipeline: Vec<Document> = vec![
             query_options.clone().as_match_doc(),
-            doc!{"$sort": doc!{"created_at": 1}},
+            doc!{"$sort": doc!{"created_at": -1}},
             pagination.as_skip_doc(),
             pagination.as_limit_doc(),
-            doc!{
-                "$lookup": doc!{
-                    "from": TRANSLATION_COL,
-                    "localField": "_id",
-                    "foreignField": "word_id",
-                    "as": "translations"
-                }
-            }
         ];
 
         let result = col.aggregate(pipeline, None);
@@ -190,33 +126,58 @@ impl DB for MongoDBClient {
         })
     }
 
-    fn delete_word(&self, word_id: String) -> Result<(), ()> {
-        // Set up session, transactions and collections
-        let result  = self.start_transaction();
+    fn delete_word(&self, word_id: Uuid) -> Result<(), ()> {       
+        // Delete both the word and its related translations
+        let word_col = self.word_collection();
+        let result_word_delete = word_col.delete_one(
+            doc!{"_id": word_id.clone() },
+            None
+        );
+        if result_word_delete.is_err() {
+            return Err(());
+        }
+        
+        Ok(())
+    }
+    
+    fn update_word(&self, update_options: &crate::models::WordUpdateOptions) -> Result<(), ()> {
+        let result = self.start_transaction();
         if result.is_err() {
             return Err(())
         }
-        let mut session = result.unwrap();       
+        let mut session = result.unwrap();
 
-        // Delete both the word and its related translations
+        // Fetch word
         let word_col = self.word_collection();
-        let result_word_delete = word_col.delete_one_with_session(doc!{"_id": word_id.clone() }, None, &mut session);
-        if result_word_delete.is_err() {
-            let _ = session.abort_transaction();
-            return Err(());
-        }
-
-        let translation_col = self.translation_collection();
-        let result_translation_delete = translation_col.delete_one_with_session(doc!{"word_id": word_id }, None, &mut session);
-        if result_translation_delete.is_err() {
-            let _ = session.abort_transaction();
+        let word_result = word_col.find_one_with_session(
+            doc!{ "_id": update_options.id.clone() }, 
+            None,
+            &mut session
+        );
+        if word_result.is_err() {
             return Err(())
         }
+        let mut wdbm = match word_result.unwrap() {
+            Some(w) => w,
+            None => return Err(())
+        };
+        let updated_at = DateTime::now();
+        wdbm.update(update_options, updated_at);
+    
+
+        let result = word_col.update_one_with_session(
+            doc!{ "_id": wdbm._id.clone() }, 
+            doc!{"$set": to_document(&wdbm).unwrap()},
+            None, &mut session);
+        if result.is_err() {
+            let _ = session.abort_transaction();
+            return Err(())
+        }  
 
         if let Err(_) = session.commit_transaction() {
             return Err(())
         }
-
+        
         Ok(())
     }
 }

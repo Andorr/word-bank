@@ -18,12 +18,9 @@ fn test_client_insert_words() {
 
     let mut word = Word::from_value("살다");
     word.kind = WordType::VERB;
-    let mut translations = vec![Translation::from_value("To live")];
+    word.translations = vec![Translation::from_value("To live")];
 
-    let result = client.new_word(&mut word, &mut translations);
+    let result = client.new_word(&mut word);
     assert!(result.is_ok());
-    assert!(word.id.len() > 0);
     assert_eq!(word.id, result.unwrap());
-
-    translations.iter().for_each(|t| assert!(t.id.len() > 0));
 }

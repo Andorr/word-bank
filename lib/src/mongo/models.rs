@@ -1,45 +1,54 @@
-use std::str::FromStr;
-
-use mongodb::bson::{DateTime, Document, doc, oid::ObjectId};
+use mongodb::bson::{DateTime, Document, doc};
 use serde::{Serialize, Deserialize};
 
-use crate::{PaginationOptions, Translation, Word, models::{WordQueryOptions, WordType}};
+use mongodb::bson::serde_helpers::uuid_as_binary;
+use crate::{PaginationOptions, Translation, Word, models::{WordQueryOptions, WordType, WordUpdateOptions}};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordDBM {
-    pub _id: ObjectId,
+    #[serde(with = "uuid_as_binary")]
+    pub _id: uuid::Uuid,
     pub value: String,
     pub created_at: DateTime,
     pub updated_at: DateTime,
     pub kind: WordType, 
     pub tags: Vec<String>,
+    pub translations: Vec<TranslationDBM>,
+}
 
-    #[serde(default, skip_serializing)]
-    pub translations: Option<Vec<TranslationDBM>>,
+impl WordDBM {
+    pub fn update(&mut self, update: &WordUpdateOptions, updated_at: DateTime) {
+        if let Some(word) = update.word.clone() {
+            self.value = word;
+        }
+        if let Some(kind) = update.kind {
+            self.kind = kind;
+        }
+        if let Some(tags) = update.tags.clone() {
+            self.tags = tags;
+        }
+        if let Some(translations) = update.translations.clone() {
+            self.translations = translations.iter().map(|t| t.into()).collect();
+        }
+        self.updated_at = updated_at;
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TranslationDBM {
-    pub _id: ObjectId,
-    pub word_id: ObjectId,
+    #[serde(with = "uuid_as_binary")]
+    pub _id: uuid::Uuid,
     pub value: String,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
-}
-
-
-impl WordDBM {
-
 }
 
 impl From<WordDBM> for Word {
     fn from(wdbm: WordDBM) -> Self {
         Word { 
-            id: wdbm._id.to_string(),
+            id: wdbm._id,
             value: wdbm.value,
             kind: wdbm.kind,
             tags: wdbm.tags,
-            translations: wdbm.translations.unwrap_or(Vec::new()).iter().map(|t| t.into()).collect(),
+            translations: wdbm.translations.iter().map(|t| t.into()).collect(),
             created_at: wdbm.created_at.into(),
             updated_at: wdbm.updated_at.into(),
 
@@ -50,27 +59,23 @@ impl From<WordDBM> for Word {
 impl From<&mut Word> for WordDBM {
     fn from(word: &mut Word) -> Self {
         WordDBM {
-            _id: ObjectId::parse_str(word.id.as_str()).unwrap_or(ObjectId::new()),
+            _id: word.id,
             value: word.value.clone(),
             kind: word.kind.clone(),
             tags: word.tags.clone(),
+            translations: word.translations.iter().map(|t| t.into()).collect(),
             created_at: word.created_at.into(),
             updated_at: word.updated_at.into(),
-
-            translations: None,
         }
     }
 }
 
 
-impl From<&mut Translation> for TranslationDBM {
-    fn from(translation: &mut Translation) -> Self {
+impl From<&Translation> for TranslationDBM {
+    fn from(translation: &Translation) -> Self {
         TranslationDBM { 
-            _id: ObjectId::parse_str(translation.id.as_str()).unwrap_or(ObjectId::new()),
-            word_id: ObjectId::from_str(translation.word_id.as_str()).unwrap_or(ObjectId::new()),
+            _id: translation.id,
             value: translation.value.clone(),
-            created_at: translation.created_at.into(),
-            updated_at: translation.updated_at.into()
         }
     }
 }
@@ -78,11 +83,8 @@ impl From<&mut Translation> for TranslationDBM {
 impl From<& TranslationDBM> for Translation {
     fn from(translation: & TranslationDBM) -> Self {
         Translation { 
-            id: translation._id.to_string(),
-            word_id: translation.word_id.to_string(),
+            id: translation._id,
             value: translation.value.clone(),
-            created_at: translation.created_at.into(),
-            updated_at: translation.updated_at.into()
         }
     }
 }
@@ -140,5 +142,24 @@ impl PaginationOptions {
         doc! {
             "$skip": self.skip().clone() as u32,
         }
+    }
+}
+
+impl WordUpdateOptions {
+
+    pub fn as_set_doc(&self, time: DateTime) -> Document {
+        let mut doc = Document::new();
+        
+        if let Some(word) = self.word.clone() {
+            doc.insert("value", word);
+        }
+        if let Some(kind) = self.kind {
+            doc.insert("kind", kind.to_string());
+        }
+        if let Some(tags) = self.tags.clone() {
+            doc.insert("tags", tags);
+        }
+        doc.insert("updated_at", time);
+        doc
     }
 }

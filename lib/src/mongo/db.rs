@@ -39,24 +39,5 @@ pub fn initialize(options: DBOptions) -> Result<(), ()> {
         Err(_) => return Err(()),
     };
 
-    println!("Creating Translation index");
-    
-    let translation_index = 
-    IndexModel::builder()
-    .keys(doc!{
-        "value": 1,
-        "word_id": 1,
-        "created_at": -1, // Descending index
-    })
-    .build();
-    
-    
-    
-    let translation_col = client.translation_collection();
-    match translation_col.create_index(translation_index, None) {
-        Ok(_) => {},
-        Err(_) => return Err(()),
-    };
-
     Ok(())
 }
