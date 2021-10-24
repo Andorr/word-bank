@@ -26,9 +26,13 @@ impl WordBankClient {
         Ok(wbclient)
     }
 
-    pub fn new_word(&self, word: &mut Word) -> Result<Uuid, ()> {
+    pub fn insert_word(&self, word: &mut Word) -> Result<Uuid, ()> {
         let now = Utc::now();
         word.update_time(now);
+
+        if word.translations.len() == 0 {
+            return Err(())
+        }
 
         self.db.insert_word(word)
     }

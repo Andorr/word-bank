@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 use uuid::{self, Uuid};
 
 use chrono::{DateTime, Utc};
@@ -24,6 +24,26 @@ impl fmt::Display for WordType {
     }
 }
 
+impl FromStr for WordType {
+
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<WordType, Self::Err> {
+        match input.to_uppercase().as_str() {
+            "NONE"  => Ok(WordType::NONE),
+            "NOUN"  => Ok(WordType::NOUN),
+            "PRONOUN" => Ok(WordType::PRONOUN),
+            "VERB" => Ok(WordType::VERB),
+            "ADJECTIVE" => Ok(WordType::ADJECTIVE),
+            "ADVERB" => Ok(WordType::ADVERB),
+            "PREPOSITION" => Ok(WordType::PREPOSITION),
+            "CONJUNCTION" => Ok(WordType::CONJUNCTION),
+            "INTERJECTION" => Ok(WordType::INTERJECTION),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Word {
     pub id: Uuid,
@@ -41,7 +61,7 @@ impl Word {
     pub fn from_value(value: &str) -> Word {
         Word {
             id: Uuid::new_v4(),
-            value: value.to_string(),
+            value: value.trim().to_string(),
             kind: WordType::NONE,
             tags: Vec::new(),
             translations: Vec::new(),

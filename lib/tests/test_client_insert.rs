@@ -20,7 +20,7 @@ fn test_client_insert_words() {
     word.kind = WordType::VERB;
     word.translations = vec![Translation::from_value("To live")];
 
-    let result = client.new_word(&mut word);
+    let result = client.insert_word(&mut word);
     assert!(result.is_ok());
     assert_eq!(word.id, result.unwrap());
 }
