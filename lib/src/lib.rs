@@ -1,6 +1,7 @@
 mod mongo;
 mod models;
 mod client;
+mod utils;
 
 pub use self::client::{WordBankClient, DB};
 pub use self::models::{

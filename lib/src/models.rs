@@ -4,6 +4,7 @@ use uuid::{self, Uuid};
 use chrono::{DateTime, Utc};
 
 use serde::{Serialize, Deserialize};
+use crate::utils::datetime_serializer;
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum WordType {
@@ -44,7 +45,7 @@ impl FromStr for WordType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Word {
     pub id: Uuid,
     pub value: String,
@@ -53,7 +54,10 @@ pub struct Word {
     
     pub translations: Vec<Translation>,
 
+    #[serde(with = "datetime_serializer")]
     pub created_at: DateTime<Utc>,
+
+    #[serde(with = "datetime_serializer")]
     pub updated_at: DateTime<Utc>,
 }
 

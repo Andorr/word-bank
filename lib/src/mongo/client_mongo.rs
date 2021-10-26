@@ -1,5 +1,5 @@
 use crate::{DB, Translation, Word, models::{PageResult, PaginationOptions, WordQueryOptions}};
-use mongodb::{bson::{self, Bson, DateTime, Document, doc, to_document}, options::FindOptions, sync::{Client, ClientSession, Collection, Database}};
+use mongodb::{bson::{Bson, DateTime, doc, to_document}, options::FindOptions, sync::{Client, ClientSession, Collection, Database}};
 use uuid::Uuid;
 
 use super::models::{WordDBM, TranslationDBM};
