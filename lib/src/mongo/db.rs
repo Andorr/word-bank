@@ -1,8 +1,6 @@
 use mongodb::{IndexModel, bson::doc};
 
-use crate::DBOptions;
-
-use super::MongoDBClient;
+use super::{MongoDBClient, DBOptions};
 
 pub fn initialize(options: DBOptions) -> Result<(), ()> {
 

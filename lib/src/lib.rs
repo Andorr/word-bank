@@ -1,7 +1,7 @@
-mod mongo;
-mod models;
 mod client;
-mod utils;
+mod models;
+pub mod utils;
+pub mod mongo;
 
 pub use self::client::{WordBankClient, DB};
 pub use self::models::{
@@ -13,7 +13,4 @@ pub use self::models::{
     PageResult,
     WordUpdateOptions,
 };
-pub use self::mongo::{DBOptions, initialize};
-
-
-
+// pub use self::mongo::{DBOptions, initialize};

@@ -2,7 +2,7 @@ use chrono::{Utc};
 use uuid::Uuid;
 
 pub use crate::models::{Word, Translation};
-use crate::{DBOptions, models::{PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions}, mongo::MongoDBClient};
+use crate::{models::{PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions}, mongo::{MongoDBClient, DBOptions}};
 
 pub trait DB {
     fn insert_word(&self, word: &mut Word) -> Result<Uuid, ()>;
@@ -12,8 +12,10 @@ pub trait DB {
     fn update_word(&self, update_options: &WordUpdateOptions) -> Result<(), ()>;
 }
 
+#[derive(Clone)]
 pub struct WordBankClient {
-    db: Box<dyn DB + 'static>,
+    // db: Box<dyn DB + 'static>,
+    db: MongoDBClient,
 }
 
 impl WordBankClient {
@@ -21,7 +23,7 @@ impl WordBankClient {
     pub fn from_mongo(options: DBOptions) -> Result<WordBankClient, ()> {
         let client = MongoDBClient::from_options(&options)?;
         let wbclient = WordBankClient {
-            db: Box::new(client),
+            db: client,
         };
         Ok(wbclient)
     }

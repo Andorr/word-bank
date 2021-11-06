@@ -3,7 +3,7 @@ mod config;
 use std::str::FromStr;
 
 use config::Config;
-use lib::{DBOptions, PaginationOptions, Translation, Word, WordBankClient, WordQueryOptions, WordType};
+use lib::{mongo::{DBOptions}, PaginationOptions, Translation, Word, WordBankClient, WordQueryOptions, WordType};
 
 use clap::{App, Arg, ArgMatches};
 
@@ -82,8 +82,8 @@ fn insert_word(cfg: &Config, word: &str, translations: &Vec<&str>, kind: &str) {
     println!("Kind: {}", kind);
 
     let options = DBOptions{
-        uri: cfg.uri.as_str(),
-        database: cfg.database.as_str(),
+        uri: cfg.uri.clone(),
+        database: cfg.database.clone(),
     };
 
     let client = WordBankClient::from_mongo(options).unwrap();
@@ -110,8 +110,8 @@ fn insert_word(cfg: &Config, word: &str, translations: &Vec<&str>, kind: &str) {
 
 fn list_words(cfg: &Config, matches: &ArgMatches) {
     let options = DBOptions{
-        uri: cfg.uri.as_str(),
-        database: cfg.database.as_str(),
+        uri: cfg.uri.clone(),
+        database: cfg.database.clone(),
     };
 
     let client = WordBankClient::from_mongo(options).unwrap();

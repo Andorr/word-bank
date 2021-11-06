@@ -1,0 +1,7 @@
+{
+  "name": "wordbank",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue"
+}

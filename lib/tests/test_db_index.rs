@@ -1,6 +1,4 @@
-use std::env;
-
-use lib::{DBOptions, initialize};
+use lib::{mongo::initialize, mongo::load_options_from_env};
 
 extern crate dotenv;
 
@@ -9,13 +7,7 @@ fn initailize_db() {
 
     dotenv::dotenv().ok();
 
-    let db_uri = env::var("WORDBANK_URI").unwrap();
-    let database = env::var("WORDBANK_DATABASE").unwrap();
-
-    let options = DBOptions {
-        uri: db_uri.as_str(),
-        database: database.as_str(),
-    };
+    let options = load_options_from_env().unwrap();
 
     let result = initialize(options);
     if result.is_err() {

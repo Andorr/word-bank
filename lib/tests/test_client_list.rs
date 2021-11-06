@@ -1,5 +1,4 @@
-use lib::{DBOptions, PaginationOptions, WordBankClient, WordQueryOptions, WordType};
-use std::env;
+use lib::{PaginationOptions, WordBankClient, WordQueryOptions, WordType, mongo::load_options_from_env};
 
 extern crate dotenv;
 
@@ -9,13 +8,7 @@ fn test_client_list_words() {
 
     dotenv::dotenv().ok();
 
-    let db_uri = env::var("WORDBANK_URI").unwrap();
-    let database = env::var("WORDBANK_DATABASE").unwrap();
-
-    let options = DBOptions {
-        uri: db_uri.as_str(),
-        database: database.as_str(),
-    };
+    let options = load_options_from_env().unwrap();
     let client = WordBankClient::from_mongo(options).unwrap();
 
     let expected_word = "살다".to_string();

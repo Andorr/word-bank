@@ -7,11 +7,12 @@ use super::models::{WordDBM, TranslationDBM};
 
 const WORD_COL: &'static str = "words"; 
 
-pub struct DBOptions<'a> {
-    pub uri: &'a str,
-    pub database: &'a str,
+pub struct DBOptions {
+    pub uri: String,
+    pub database: String,
 }
 
+#[derive(Clone)]
 pub struct MongoDBClient {
     client: Client,
     db: Database, 
@@ -19,8 +20,8 @@ pub struct MongoDBClient {
 
 impl MongoDBClient {
     pub fn from_options(options: &DBOptions) -> Result<MongoDBClient, ()> {
-        let client = Client::with_uri_str(options.uri).unwrap();
-        let database = client.database(options.database);
+        let client = Client::with_uri_str(options.uri.as_str()).unwrap();
+        let database = client.database(options.database.as_str());
 
         let c = MongoDBClient { 
             client: client,

@@ -1,5 +1,4 @@
-use lib::{DBOptions, WordBankClient, WordType, Word, Translation};
-use std::env;
+use lib::{Translation, Word, WordBankClient, WordType, mongo::load_options_from_env};
 
 extern crate dotenv;
 
@@ -9,13 +8,7 @@ fn test_client_delete_word() {
 
     dotenv::dotenv().ok();
 
-    let db_uri = env::var("WORDBANK_URI").unwrap();
-    let database = env::var("WORDBANK_DATABASE").unwrap();
-
-    let options = DBOptions {
-        uri: db_uri.as_str(),
-        database: database.as_str(),
-    };
+    let options = load_options_from_env().unwrap();
     let client = WordBankClient::from_mongo(options).unwrap();
 
     let mut word = Word::from_value("살다");
