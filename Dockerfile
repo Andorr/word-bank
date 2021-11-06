@@ -1,7 +1,5 @@
-FROM rust:1.56.1 as build
+FROM ekidd/rust-musl-builder:stable as builder
 ENV PKG_CONFIG_ALLOW_CROSS=1
-
-WORKDIR /app
 
 # Cache dependencies
 RUN USER=root cargo new --lib lib
@@ -16,18 +14,18 @@ RUN cd api && cargo build --release
 # Build lib for release
 RUN cd lib && rm -rf src/*.rs
 COPY ./lib/src ./lib/src
-RUN rm ./api/target/release/deps/lib-*
-RUN rm ./api/target/release/deps/liblib-*
+RUN rm ./api/target/x86_64-unknown-linux-musl/release/deps/lib-*
+RUN rm ./api/target/x86_64-unknown-linux-musl/release/deps/liblib-*
 RUN cd api && cargo build --release
 
 # Build api for release
 RUN cd api && rm -rf src/*.rs
 COPY ./api/src ./api/src
-RUN rm ./api/target/release/deps/api-*
+RUN rm ./api/target/x86_64-unknown-linux-musl/release/deps/api-*
 RUN cd api && cargo build --release
 
-FROM gcr.io/distroless/cc-debian10
+FROM alpine:latest
 
-COPY --from=build /app/api/target/release/api /usr/local/bin/api
+COPY --from=builder /home/rust/src/api/target/x86_64-unknown-linux-musl/release/api /usr/local/bin/api
 
 ENTRYPOINT [ "api" ]
