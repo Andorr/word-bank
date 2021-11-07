@@ -1,6 +1,6 @@
 use tide::{Middleware, Next, Request, Response, Result};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Authorization {
     token: String,
 }

@@ -20,6 +20,11 @@ async fn main() -> tide::Result<()> {
         Err(_) => "8080".to_string()
     };
 
+    let host = match env::var("HOST") {
+        Ok(host ) => host,
+        Err(_) => "0.0.0.0".to_string()
+    };
+
     tide::log::start();
     let mut app = tide::with_state(State::new());
 
@@ -35,11 +40,16 @@ async fn main() -> tide::Result<()> {
 
     app
         .at("/api/v1/words")
-        .with(authorization)
+        .with(authorization.clone())
         .get(controllers::words_list);
 
+    app
+        .at("/api/v1/words")
+        .with(authorization.clone())
+        .post(controllers::word_create);
 
-    app.listen(format!("0.0.0.0:{}", port)).await?;
+
+    app.listen(format!("{}:{}", host, port)).await?;
 
     Ok(())
 }

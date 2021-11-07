@@ -102,7 +102,7 @@ impl Translation {
     } 
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct WordQueryOptions {
     pub query: Option<String>,
     pub word: Option<String>,
@@ -116,10 +116,25 @@ impl WordQueryOptions {
     }
 }
 
-#[derive(Clone, Copy)]
+impl Default for WordQueryOptions {
+    fn default() -> Self {
+        WordQueryOptions::empty()
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PaginationOptions {
     pub limit: usize,
     pub page: usize,
+}
+
+impl Default for PaginationOptions {
+    fn default() -> Self {
+        Self {
+            limit: 25,
+            page: 1,
+        }
+    }
 }
 
 impl PaginationOptions {
