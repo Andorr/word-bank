@@ -1,16 +1,12 @@
 import { PageResult, Word } from "./models";
 
-export default class WordBankClient {
+export default class WordBank {
 
-    token: string;
-    baseURL: string;
+    static token: string = process.env.VUE_APP_WORDBANK_API_TOKEN;
+    static baseURL: string = process.env.VUE_APP_WORDBANK_API_URL // "https://wordbank-api.herokuapp.com/";
 
-    constructor(token: string) {
-        this.token = token;
-        this.baseURL = "https://wordbank-api.herokuapp.com/"
-    }
 
-    listWords(): Promise<PageResult> {
+    static listWords(): Promise<PageResult> {
         return this.doRequest<PageResult>(
             "GET",
             "api/v1/words",
@@ -21,8 +17,19 @@ export default class WordBankClient {
         });
     }
 
+    static insertWord(word: Word) {
+        return this.doRequest<any>(
+            "POST",
+            "api/v1/words",
+            undefined,
+            word.toObject(),
+        ).then((result) => {
+            return Word.fromObject(result);
+        })
+    }
 
-    private doRequest<T>(method: string, path: string, params: Record<string, any> = {}): Promise<T> {
+
+    private static doRequest<T>(method: string, path: string, params: Record<string, any> = {}, body: any = undefined): Promise<T> {
 
         const query = {
             ...params,
@@ -30,12 +37,18 @@ export default class WordBankClient {
         };
         const queryString = Object.entries(query).map(([key, val]) => `${key}=${val}`).join("&");
 
-        return fetch(this.baseURL.concat(path, '?', queryString), {
+        const options: RequestInit = {
             method: method,
             headers: {
                 'Authorization': `Bearer ${this.token}`,
-            }
-        })
+                'Content-Type': 'application/json',
+            },
+        };
+        if(body) {
+            options.body = JSON.stringify(body);
+        }
+
+        return fetch(this.baseURL.concat(path, '?', queryString), options)
         .then((res) => {
             return res.json();
         })

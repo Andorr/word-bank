@@ -1,23 +1,32 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
+import URLS from '@/URLS';
+
+// Views
 import Tabs from '../views/Tabs.vue'
+
+
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/tabs/tab1'
+    redirect: URLS.tabs.concat(URLS.words),
   },
   {
-    path: '/tabs/',
+    path: '/tabs',
     component: Tabs,
     children: [
       {
         path: '',
-        redirect: '/tabs/tab1'
+        redirect: URLS.tabs.concat(URLS.words),
       },
       {
-        path: 'tab1',
-        component: () => import('@/views/Tab1.vue')
+        path: URLS.tabs.concat(URLS.words),
+        component: () => import('@/views/WordList/WordList.vue'),
+      },
+      {
+        path: URLS.tabs.concat(URLS.words, URLS.wordsUpsert),
+        component: () => import('@/views/WordUpsert/WordUpsert.vue')
       },
       {
         path: 'tab2',
