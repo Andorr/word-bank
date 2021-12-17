@@ -5,7 +5,6 @@ export default class WordBank {
     static token: string = process.env.VUE_APP_WORDBANK_API_TOKEN;
     static baseURL: string = process.env.VUE_APP_WORDBANK_API_URL // "https://wordbank-api.herokuapp.com/";
 
-
     static listWords(): Promise<PageResult> {
         return this.doRequest<PageResult>(
             "GET",
@@ -17,20 +16,37 @@ export default class WordBank {
         });
     }
 
-    static insertWord(word: Word) {
+    static insertWord(word: Word): Promise<Word> {
         return this.doRequest<any>(
             "POST",
             "api/v1/words",
             undefined,
             word.toObject(),
         ).then((result) => {
-            return Word.fromObject(result);
+            console.log("Result:", result)
+            const newWord = Word.fromObject(result);
+            
+            const event = new CustomEvent('wb-word-insert', { detail: newWord });
+            window.dispatchEvent(event);
+            
+            return newWord;
         })
+    }
+    
+    static updateWord(word: Word): Promise<Word> {
+        return this.doRequest<Word>(
+            "PUT",
+            "api/v1/words/".concat(word.id),
+            undefined,
+            word.toObject()
+        ).then(() => {
+            return word;
+        });
     }
 
 
     private static doRequest<T>(method: string, path: string, params: Record<string, any> = {}, body: any = undefined): Promise<T> {
-
+        console.log(path)
         const query = {
             ...params,
             token: this.token

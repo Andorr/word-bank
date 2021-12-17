@@ -1,10 +1,11 @@
 mod controllers;
 mod middleware;
 mod state;
+mod error;
 
 use std::env;
 use lib::utils::load_env;
-use tide::{security::{CorsMiddleware, Origin}};
+use tide::{security::{CorsMiddleware, Origin}, http::headers::HeaderValue};
 
 use crate::{middleware::auth::Authorization, state::State};
 
@@ -30,6 +31,7 @@ async fn main() -> tide::Result<()> {
 
     app.with(
         CorsMiddleware::new()
+        .allow_methods("GET, POST, PUT, DELETE, OPTIONS".parse::<HeaderValue>().unwrap())
         .allow_origin(Origin::from("*"))
     );
 
@@ -47,6 +49,11 @@ async fn main() -> tide::Result<()> {
         .at("/api/v1/words")
         .with(authorization.clone())
         .post(controllers::word_create);
+
+    app
+        .at("/api/v1/words/:id")
+        .with(authorization.clone())
+        .put(controllers::word_update);
 
 
     app.listen(format!("{}:{}", host, port)).await?;

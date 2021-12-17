@@ -38,6 +38,7 @@
           v-for='word in words' 
           :key='word.id'
           class="ion-activatable ripple-parent"
+          @click="goToWordUpsert(word.id)"
         >
           <div class="w-full my-2">
             <h4 class="mb-0 font-bold">
@@ -61,7 +62,8 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import URLS from '@/URLS';
-import WordBank from '@/lib/WordBankClient';
+
+import { ACTIONS } from '@/store/actions';
 
 // Components
 import { 
@@ -82,10 +84,11 @@ import {
   IonRefresherContent, 
 } from '@ionic/vue';
 import IconBtn from '@/components/base/IconBtn.vue';
-import { PageResult, Word } from '@/lib/models';
+import { Word } from '@/lib/models';
 
 // Icons
 import { add, chevronDownCircleOutline } from 'ionicons/icons';
+import { LIST_OPTIONS } from '@/store/mutations';
 
 export default  defineComponent({
   name: 'Tab1',
@@ -116,44 +119,55 @@ export default  defineComponent({
 
       isRefreshing: false,
       isLoading: true,
-      words: [
-        { value: 'Hello :D', translations: [{value: 'My translations'}, {value: 'My other translations'}]}
-      ] as Word[],
+    }
+  },
+  computed: {
+    words(): Word[] {
+      return this.$store.getters.getWords;
     }
   },
   methods: {
     refresh(event: CustomEvent) {
       this.isRefreshing = true;
 
-      const p = this.refreshData();
-      setTimeout(() => {
+      this.refreshData()
+        .finally(() => {
+          (event.target as unknown as {complete: Function}).complete();
+          this.isRefreshing = false;
+        })
+      /* setTimeout(() => {
         p.then((setData) => setData())
         .finally(() => {
           (event.target as unknown as {complete: Function}).complete();
           this.isRefreshing = false;
         })
-      }, 2000)
+      }, 2000) */
     },
     refreshData() {
-      return WordBank.listWords()
+      return this.$store.dispatch(ACTIONS.WORD_LIST, { listOptions: LIST_OPTIONS.OVERWRITE });
+
+      /* return WordBank.listWords()
         .then((words: PageResult) => {
-          const setData = () => {this.words = words.results};
+          const setData = () => {
+            this.words = words.results
+          };
           return setData;
-        });
+        }); */
     },
-    goToWordUpsert() {
-      this.$router.push(URLS.tabs.concat(URLS.words, URLS.wordsUpsert));
-    }
+    goToWordUpsert(id?: string) {
+      let path = URLS.tabs.concat(URLS.words, URLS.wordsUpsert)
+      if(id) {
+        path = path.concat(`?id=${id}`)
+      }
+      this.$router.push(path)
+    },
   },
   mounted() {
     this.isLoading = true;
     this.refreshData()
-    .then((setData) => {
-      setData();
-    })
-    .finally(() => {
-      this.isLoading = false;
-    });
+      .finally(() => {
+        this.isLoading = false;
+      });
   }
 });
 </script>

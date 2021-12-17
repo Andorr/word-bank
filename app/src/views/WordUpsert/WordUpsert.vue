@@ -14,7 +14,7 @@
                     <ion-label
                         position="stacked"
                     >
-                    Word
+                        Word
                     </ion-label>
                     <ion-input placeholder="Word" v-model='word' ></ion-input>
                 </ion-item>
@@ -22,10 +22,10 @@
                     <ion-label
                         position="stacked"
                     >
-                    Word Type
+                        Word Type
                     </ion-label>
                     <ion-select
-                        :value="wordType"
+                        v-model="wordType"
                         interface="action-sheet"
                     >
                         <ion-select-option
@@ -33,7 +33,7 @@
                             :key='wt.value'
                             :value='wt.value'
                         >
-                        {{ wt.label }}
+                            {{ wt.label }}
                         </ion-select-option>
                     </ion-select>
                 </ion-item>
@@ -41,7 +41,7 @@
                     <ion-label
                         position="stacked"
                     >
-                    Translations
+                        Translations
                     </ion-label>
 
                     <icon-btn slot='end'>
@@ -58,10 +58,12 @@
                 </ion-item>
 
             </div>
-            <div class="fixed bottom-8 w-full px-2 z-20">
-                <btn class="w-full shadow-lg" :disabled='!isFormValid' @click='insertWord'>
+            <div class="w-full px-2">
+                <btn class="w-full shadow-lg" :disabled='!isFormValid' @click='upsertWord'>
                     <ion-spinner v-if='isLoading' name="dots" />
-                    <span v-else>Create</span>
+                    <span v-else>
+                        {{ id ? 'Save' : 'Create' }}
+                    </span>
                 </btn>
             </div>
         </ion-content>
@@ -71,6 +73,10 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import { v4 as uuidv4 } from 'uuid';
+
+// Logic
+import { Translation, Word } from '@/lib/models';
+import { ACTIONS } from '@/store/actions';
 
 // Components
 import {
@@ -94,8 +100,7 @@ import Btn from '@/components/base/Btn.vue';
 
 // Icons
 import { trash, add } from 'ionicons/icons';
-import WordBank from '@/lib/WordBankClient';
-import { Translation, Word } from '@/lib/models';
+
 
 export default defineComponent({
     name: 'WordUpsert',
@@ -127,6 +132,7 @@ export default defineComponent({
             },
 
             isLoading: false,
+            id: null as string | null,
             word: '',
             translations: [] as Translation[],
             wordType: 'NOUN',
@@ -159,29 +165,46 @@ export default defineComponent({
             }
             this.translations.splice(index, 1);
         },
-        insertWord(): void {
+        upsertWord(): void {
             if(!this.isFormValid) {
                 return;
             }
             this.isLoading = true;
 
             const word = Word.fromObject({
+                id: this.id,
                 value: this.word,
                 kind: this.wordType,
                 translations: this.translations.filter(t => t.value).map(t => t.value),
             });
 
-            WordBank.insertWord(word)
-            .then(() => {
-                this.$router.back();
-            })
-            .catch(() => {
-                this.isLoading = false;
-            });
+            const actions = (this.id) ? ACTIONS.WORD_UPDATE : ACTIONS.WORD_INSERT;
+            this.$store.dispatch(actions, word)
+                .then(() => {
+                    this.$router.back();
+                })
+                .catch(() => {
+                    this.isLoading = false;
+                });
+        },
+        mountWord(id: string) {
+            const word: Word | null = this.$store.getters.getWordById(id);
+            if(!word) {
+                return
+            }
+            console.log(word.toObject())
+            this.id = word.id;
+            this.word = word.value;
+            this.translations = word.translations;
+            this.wordType = word.kind;
         }
     },
     mounted() {
-        this.addTranslation();
+        if(this.$route.query.id) {
+            this.mountWord(this.$route.query.id as string)
+        } else {
+            this.addTranslation();
+        }
     }
 })
 </script>

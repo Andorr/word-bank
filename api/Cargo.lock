@@ -82,6 +82,7 @@ dependencies = [
  "lib",
  "serde",
  "tide",
+ "uuid",
 ]
 
 [[package]]
