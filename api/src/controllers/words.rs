@@ -101,8 +101,24 @@ pub async fn word_update(mut req: Request<State>) -> tide::Result {
     };
 
     let response = match client.update_word(word_update_options) {
-        Ok(_) => Response::builder(200).build(),
+        Ok(_) => Response::builder(204).build(),
         Err(_) => err_server_error()
     };
     Ok(response)
+}
+
+pub async fn words_delete(req: Request<State>) -> tide::Result {
+    let word_id = match Uuid::parse_str(req.param("id").unwrap()) {
+        Ok(id) => id,
+        Err(err) => return Ok(build_error_res(400, "INVALID_ID", err.to_string().as_str()))
+    };
+
+    let state = req.state();
+    let client = &state.client;
+
+    let res = match client.delete_word(word_id) {
+        Ok(_) => Response::builder(204).build(),
+        Err(_) => err_server_error()
+    };
+    Ok(res)
 }

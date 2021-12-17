@@ -9,8 +9,6 @@ use tide::{security::{CorsMiddleware, Origin}, http::headers::HeaderValue};
 
 use crate::{middleware::auth::Authorization, state::State};
 
-
-
 #[async_std::main]
 async fn main() -> tide::Result<()> {
 
@@ -55,6 +53,10 @@ async fn main() -> tide::Result<()> {
         .with(authorization.clone())
         .put(controllers::word_update);
 
+    app
+        .at("/api/v1/words/:id")
+        .with(authorization.clone())
+        .delete(controllers::words_delete);
 
     app.listen(format!("{}:{}", host, port)).await?;
 
