@@ -5,7 +5,10 @@
                 <ion-buttons slot="start">
                     <ion-back-button></ion-back-button>
                 </ion-buttons>
-                <ion-title>Insert Word</ion-title>
+                <ion-title>{{ id ? 'Save' : 'Create' }} Word</ion-title>
+                <icon-btn v-if='id' slot='end' @click="deleteWord">
+                    <ion-icon :icon='icons.trash' />
+                </icon-btn>
             </ion-toolbar>
         </ion-header>
         <ion-content class="relative">
@@ -184,6 +187,20 @@ export default defineComponent({
                     this.$router.back();
                 })
                 .catch(() => {
+                    // TODO: Add error
+                    this.isLoading = false;
+                });
+        },
+        deleteWord() {
+            if(!this.id) {
+                return
+            }
+            this.$store.dispatch(ACTIONS.WORD_DELETE, this.id)
+                .then(() => {
+                    this.$router.back();
+                })
+                .catch(() => {
+                    // TODO: Add error
                     this.isLoading = false;
                 });
         },
@@ -192,7 +209,6 @@ export default defineComponent({
             if(!word) {
                 return
             }
-            console.log(word.toObject())
             this.id = word.id;
             this.word = word.value;
             this.translations = word.translations;

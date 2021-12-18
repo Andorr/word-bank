@@ -68,7 +68,9 @@ pub async fn word_create(mut req: Request<State>) -> tide::Result {
     }
 
     let response = match client.insert_word(&mut word) {
-        Ok(_) => Response::builder(201).build(),
+        Ok(_) => Response::builder(201)
+            .body(Body::from_json(&word)?)    
+            .build(),
         Err(_) => err_server_error()
     };
 

@@ -15,7 +15,7 @@
               </ion-col>
 
             <ion-col size="auto" class="ion-align-self-end">
-              <icon-btn @click='goToWordUpsert'>
+              <icon-btn @click='goToWordUpsert()'>
                   <ion-icon class="text-2xl" :icon="icons.add"></ion-icon>
               </icon-btn>
             </ion-col>
@@ -135,24 +135,9 @@ export default  defineComponent({
           (event.target as unknown as {complete: Function}).complete();
           this.isRefreshing = false;
         })
-      /* setTimeout(() => {
-        p.then((setData) => setData())
-        .finally(() => {
-          (event.target as unknown as {complete: Function}).complete();
-          this.isRefreshing = false;
-        })
-      }, 2000) */
     },
     refreshData() {
       return this.$store.dispatch(ACTIONS.WORD_LIST, { listOptions: LIST_OPTIONS.OVERWRITE });
-
-      /* return WordBank.listWords()
-        .then((words: PageResult) => {
-          const setData = () => {
-            this.words = words.results
-          };
-          return setData;
-        }); */
     },
     goToWordUpsert(id?: string) {
       let path = URLS.tabs.concat(URLS.words, URLS.wordsUpsert)

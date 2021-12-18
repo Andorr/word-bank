@@ -6,24 +6,28 @@ export default class WordBank {
     static baseURL: string = process.env.VUE_APP_WORDBANK_API_URL // "https://wordbank-api.herokuapp.com/";
 
     static listWords(): Promise<PageResult> {
-        return this.doRequest<PageResult>(
+        return this.doRequest(
             "GET",
             "api/v1/words",
         )
-        .then((result) => {
+        .then((res) => {
+            return res.json();
+        })
+        .then((result: PageResult) => {
             result.results = result.results.map(wObj => Word.fromObject(wObj));
             return result;
         });
     }
 
     static insertWord(word: Word): Promise<Word> {
-        return this.doRequest<any>(
+        return this.doRequest(
             "POST",
             "api/v1/words",
             undefined,
             word.toObject(),
-        ).then((result) => {
-            console.log("Result:", result)
+        ).then((res) => {
+            return res.json();
+        }).then((result: object) => {
             const newWord = Word.fromObject(result);
             
             const event = new CustomEvent('wb-word-insert', { detail: newWord });
@@ -34,7 +38,7 @@ export default class WordBank {
     }
     
     static updateWord(word: Word): Promise<Word> {
-        return this.doRequest<Word>(
+        return this.doRequest(
             "PUT",
             "api/v1/words/".concat(word.id),
             undefined,
@@ -43,10 +47,16 @@ export default class WordBank {
             return word;
         });
     }
+    
+    static deleteWord(id: string): Promise<string> {
+        return this.doRequest(
+            "DELETE",
+            "api/v1/words/".concat(id),
+        ).then(() => id)
+    }
 
 
-    private static doRequest<T>(method: string, path: string, params: Record<string, any> = {}, body: any = undefined): Promise<T> {
-        console.log(path)
+    private static doRequest(method: string, path: string, params: Record<string, any> = {}, body: any = undefined): Promise<Response> {
         const query = {
             ...params,
             token: this.token
@@ -65,9 +75,6 @@ export default class WordBank {
         }
 
         return fetch(this.baseURL.concat(path, '?', queryString), options)
-        .then((res) => {
-            return res.json();
-        })
     }
 
 }
