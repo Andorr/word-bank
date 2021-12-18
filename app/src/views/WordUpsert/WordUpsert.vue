@@ -12,7 +12,7 @@
             </ion-toolbar>
         </ion-header>
         <ion-content class="relative">
-            <div class="mb-24">
+            <div class="flex flex-col min-h-full">
                 <ion-item>
                     <ion-label
                         position="stacked"
@@ -59,16 +59,17 @@
                         </div>
                     </template>
                 </ion-item>
-
+                <div class="flex-grow" />
+                <div class="mx-4 mb-4">
+                    <btn class="w-full shadow-lg" :disabled='!isFormValid || isLoading' @click='upsertWord'>
+                        <ion-spinner v-if='isLoading' name="dots" />
+                        <span v-else>
+                            {{ id ? 'Save' : 'Create' }}
+                        </span>
+                    </btn>
+                </div>
             </div>
-            <div class="w-full px-2">
-                <btn class="w-full shadow-lg" :disabled='!isFormValid' @click='upsertWord'>
-                    <ion-spinner v-if='isLoading' name="dots" />
-                    <span v-else>
-                        {{ id ? 'Save' : 'Create' }}
-                    </span>
-                </btn>
-            </div>
+            
         </ion-content>
     </ion-page>
 </template>
@@ -97,6 +98,7 @@ import {
     IonSelect,
     IonSelectOption,
     IonSpinner,
+    alertController,
 } from '@ionic/vue';
 import IconBtn from '@/components/base/IconBtn.vue';
 import Btn from '@/components/base/Btn.vue';
@@ -178,7 +180,7 @@ export default defineComponent({
                 id: this.id,
                 value: this.word,
                 kind: this.wordType,
-                translations: this.translations.filter(t => t.value).map(t => t.value),
+                translations: this.translations.filter(t => t.value),
             });
 
             const actions = (this.id) ? ACTIONS.WORD_UPDATE : ACTIONS.WORD_INSERT;
@@ -191,18 +193,34 @@ export default defineComponent({
                     this.isLoading = false;
                 });
         },
-        deleteWord() {
+        async deleteWord() {
             if(!this.id) {
                 return
             }
-            this.$store.dispatch(ACTIONS.WORD_DELETE, this.id)
-                .then(() => {
-                    this.$router.back();
-                })
-                .catch(() => {
-                    // TODO: Add error
-                    this.isLoading = false;
-                });
+        
+            const alert = await alertController.create({
+                header: `Delete word '${this.word}'?`,
+                message: `Are you sure you want to delete the word '${this.word}'?`,
+                buttons: ['Cancel', {
+                    text: 'Yes',
+                    role: 'yes',
+                }]
+            });
+            await alert.present()
+
+            const {role} = await alert.onDidDismiss();
+            if(role === 'yes') {
+                this.isLoading = true;
+                this.$store.dispatch(ACTIONS.WORD_DELETE, this.id)
+                    .then(() => {
+                        this.$router.back();
+                    })
+                    .catch(() => {
+                        // TODO: Add error
+                        this.isLoading = false;
+                    });
+            }
+
         },
         mountWord(id: string) {
             const word: Word | null = this.$store.getters.getWordById(id);
@@ -211,7 +229,7 @@ export default defineComponent({
             }
             this.id = word.id;
             this.word = word.value;
-            this.translations = word.translations;
+            this.translations = word.translations.map(t => new Translation(t.id, t.value));
             this.wordType = word.kind;
         }
     },

@@ -24,7 +24,10 @@ export default class WordBank {
             "POST",
             "api/v1/words",
             undefined,
-            word.toObject(),
+            {
+                ...word.toObject(),
+                translations: word.translations.map(it => it.value)
+            },
         ).then((res) => {
             return res.json();
         }).then((result: object) => {
@@ -42,7 +45,10 @@ export default class WordBank {
             "PUT",
             "api/v1/words/".concat(word.id),
             undefined,
-            word.toObject()
+            {
+                ...word.toObject(),
+                translations: word.translations.map(it => it.value)
+            },
         ).then(() => {
             return word;
         });
