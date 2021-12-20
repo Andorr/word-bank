@@ -1,11 +1,11 @@
-import { PageResult, Word } from "@/lib/models";
+import { PageResult, PaginationOptions, Word, WordQueryOptions } from "@/lib/models";
 import WordBank from "@/lib/WordBankClient";
 import { ActionTree } from "vuex";
 import { State } from '.';
 import { LIST_OPTIONS, MUTATIONS } from "./mutations";
 
 export const enum ACTIONS {
-    WORD_LIST = 'WORD_LIST',
+    WORD_QUERY = 'WORD_QUERY',
     WORD_INSERT = 'WORD_INSERT',
     WORD_UPDATE = 'WORD_UPDATE',
     WORD_DELETE = 'WORD_DELETE',
@@ -31,8 +31,8 @@ export const actions: ActionTree<State, any> = {
                 return w;
             })
     },
-    [ACTIONS.WORD_LIST](store, options: {listOptions: LIST_OPTIONS} = {listOptions: LIST_OPTIONS.LAST}): Promise<PageResult> {
-        return WordBank.listWords().then((pageResult: PageResult) => {
+    [ACTIONS.WORD_QUERY](store, options: ActionQueryOptions = {listOptions: LIST_OPTIONS.LAST}): Promise<PageResult> {
+        return WordBank.queryWords(options.queryOptions, options.pagination).then((pageResult: PageResult) => {
                 store.commit(MUTATIONS.WORDS_SET, {
                     words: pageResult.results,
                     listOptions: options.listOptions
@@ -48,3 +48,8 @@ export const actions: ActionTree<State, any> = {
     }
 }
 
+type ActionQueryOptions = {
+    queryOptions?: WordQueryOptions; 
+    pagination?: PaginationOptions; 
+    listOptions: LIST_OPTIONS;
+}

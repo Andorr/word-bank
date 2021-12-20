@@ -3,4 +3,5 @@ export default {
 
     words: '/words',
     wordsUpsert: '/upsert',
+    wordsSearch: '/search',
 }

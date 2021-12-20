@@ -15,9 +15,14 @@
               </ion-col>
 
             <ion-col size="auto" class="ion-align-self-end">
-              <icon-btn @click='goToWordUpsert()'>
-                  <ion-icon class="text-2xl" :icon="icons.add"></ion-icon>
-              </icon-btn>
+              <div class="flex items-center">
+                <icon-btn @click='goToWordSearch()'>
+                    <ion-icon class="text-2xl" :icon="icons.search"></ion-icon>
+                </icon-btn>
+                <icon-btn @click='goToWordUpsert()'>
+                    <ion-icon class="text-2xl" :icon="icons.add"></ion-icon>
+                </icon-btn>
+              </div>
             </ion-col>
             </ion-row>
           </ion-grid>
@@ -34,22 +39,12 @@
       </ion-refresher>
 
       <ion-list v-if='!isLoading'>
-        <ion-item 
+        <word-item 
           v-for='word in words' 
           :key='word.id'
-          class="ion-activatable ripple-parent"
+          :word='word'
           @click="goToWordUpsert(word.id)"
-        >
-          <div class="w-full my-2">
-            <h4 class="mb-0 font-bold">
-              {{ word.value }}
-            </h4>
-            <p class="text-gray-300 mb-0">
-              {{ word.translations.map(t => t.value).join(', ') }}
-            </p>
-            <ion-ripple-effect></ion-ripple-effect>
-          </div>
-        </ion-item>
+        />
       </ion-list>
       <div v-else class="items-center w-full h-full justify-center flex">
         <ion-spinner class="spinner" name='crescent' color='primary' />
@@ -63,14 +58,15 @@
 import { defineComponent } from 'vue';
 import URLS from '@/URLS';
 
+// Store
 import { ACTIONS } from '@/store/actions';
+import { Word } from '@/lib/models';
 
 // Components
 import { 
   IonPage,
   IonHeader,
   IonToolbar,
-  IonRippleEffect,
   IonIcon,
   IonSpinner,
   IonGrid,
@@ -78,25 +74,23 @@ import {
   IonCol,
   IonTitle,
   IonContent,
-  IonItem,
   IonList,
   IonRefresher,
   IonRefresherContent, 
 } from '@ionic/vue';
 import IconBtn from '@/components/base/IconBtn.vue';
-import { Word } from '@/lib/models';
+import WordItem from '@/components/WordItem.vue';
 
 // Icons
-import { add, chevronDownCircleOutline } from 'ionicons/icons';
+import { add, chevronDownCircleOutline, search } from 'ionicons/icons';
 import { LIST_OPTIONS } from '@/store/mutations';
 
 export default  defineComponent({
-  name: 'Tab1',
+  name: 'WordList',
   components: { 
     IonHeader,
     IonToolbar,
     IonTitle,
-    IonRippleEffect,
     IonIcon,
     IonSpinner,
     IonGrid,
@@ -104,17 +98,18 @@ export default  defineComponent({
     IonCol,
     IonContent,
     IonPage,
-    IonItem,
     IonList,
     IonRefresher,
     IonRefresherContent,
     IconBtn,
+    WordItem,
   },
   data() {
     return {
       icons: {
         add,
         chevronDownCircleOutline,
+        search,
       },
 
       isRefreshing: false,
@@ -137,7 +132,7 @@ export default  defineComponent({
         })
     },
     refreshData() {
-      return this.$store.dispatch(ACTIONS.WORD_LIST, { listOptions: LIST_OPTIONS.OVERWRITE });
+      return this.$store.dispatch(ACTIONS.WORD_QUERY, { listOptions: LIST_OPTIONS.OVERWRITE });
     },
     goToWordUpsert(id?: string) {
       let path = URLS.tabs.concat(URLS.words, URLS.wordsUpsert)
@@ -146,6 +141,9 @@ export default  defineComponent({
       }
       this.$router.push(path)
     },
+    goToWordSearch() {
+      this.$router.push(URLS.tabs.concat(URLS.words, URLS.wordsSearch))
+    }
   },
   mounted() {
     this.isLoading = true;

@@ -1,14 +1,18 @@
-import { PageResult, Word } from "./models";
+import { PageResult, PaginationOptions, Word, WordQueryOptions } from "./models";
 
 export default class WordBank {
 
     static token: string = process.env.VUE_APP_WORDBANK_API_TOKEN;
     static baseURL: string = process.env.VUE_APP_WORDBANK_API_URL // "https://wordbank-api.herokuapp.com/";
 
-    static listWords(): Promise<PageResult> {
+    static queryWords(query: WordQueryOptions = {}, pagination: PaginationOptions = {}): Promise<PageResult> {
         return this.doRequest(
             "GET",
             "api/v1/words",
+            {
+                ...query,
+                ...pagination,
+            }
         )
         .then((res) => {
             return res.json();

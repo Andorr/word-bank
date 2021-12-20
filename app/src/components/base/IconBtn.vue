@@ -1,5 +1,6 @@
 <template>
-    <button 
+    <button
+        ion-button
         class="ion-activatable w-12 h-12 text-primary rounded-full flex justify-center items-center overflow-hidden relative"
         v-bind="$attrs"
     >

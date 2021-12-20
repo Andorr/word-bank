@@ -29,6 +29,10 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/WordUpsert/WordUpsert.vue')
       },
       {
+        path: URLS.tabs.concat(URLS.words, URLS.wordsSearch),
+        component: () => import('@/views/WordSearch/WordSearch.vue')
+      },
+      {
         path: 'tab2',
         component: () => import('@/views/Tab2.vue')
       },

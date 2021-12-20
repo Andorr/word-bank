@@ -50,3 +50,15 @@ export type PageResult = {
     count: number;
     results: Word[];
 }
+
+export type WordQueryOptions = {
+    query?: string;
+    word?: string;
+    kind?: string;
+    tags?: string[];
+}
+
+export type PaginationOptions = {
+    limit?: number;
+    page?: number;
+}
