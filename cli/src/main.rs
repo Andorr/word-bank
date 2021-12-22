@@ -1,11 +1,12 @@
 mod config;
 
-use std::str::FromStr;
+use std::{str::FromStr, fs};
 
 use config::Config;
 use lib::{mongo::{DBOptions}, PaginationOptions, Translation, Word, WordBankClient, WordQueryOptions, WordType};
 
 use clap::{App, Arg, ArgMatches};
+use serde::{Deserialize, Serialize};
 
 extern crate dotenv;
 
@@ -59,6 +60,13 @@ fn main() {
                                     .takes_value(true)
                                 )
                     )
+                    .subcommand(
+                        App::new("import")
+                                .arg(
+                                    Arg::with_name("file")
+                                    .takes_value(true)
+                                )
+                    )   
         );
     let matches = app.get_matches();
 
@@ -72,6 +80,9 @@ fn main() {
         }
         if let Some(ref matches) = matches.subcommand_matches("list") {
             list_words(&config, matches);
+        }
+        if let Some(ref matches) = matches.subcommand_matches("import") {
+            import_words_from_file(&config, matches);
         }
     }
 }
@@ -138,3 +149,53 @@ fn list_words(cfg: &Config, matches: &ArgMatches) {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct WordFileType {
+    id: String,
+    value: String,
+    kind: String,
+    translations: Vec<String>,
+    folders: Vec<String>,
+}
+
+fn import_words_from_file(cfg: &Config, matches: &ArgMatches) {
+    let file_name = matches.value_of("file").unwrap();
+    let content = fs::read_to_string(file_name)
+        .expect(format!("was not able to read from file '{}'", file_name).as_str());
+    
+    let words: Vec<WordFileType> = serde_json::from_str(content.as_str()).unwrap();
+    for w in &words {
+        println!("{:?}", w);
+    }
+
+    let mut mapped_words: Vec<Word> = (&words).iter().map(|w| {
+        let mut word = Word::from_value(w.value.as_str());
+        word.id = uuid::Uuid::parse_str(w.id.as_str()).unwrap();
+        word.kind = WordType::from_str(w.kind.as_str()).unwrap();
+        word.translations = w.translations.iter().map(|t| {
+            Translation{
+                id: uuid::Uuid::new_v4(),
+                value: t.clone(),
+            }
+        }).collect();
+        word
+    }).collect();
+
+
+    let options = DBOptions{
+        uri: cfg.uri.clone(),
+        database: cfg.database.clone(),
+    };
+
+    let client = WordBankClient::from_mongo(options).unwrap();
+
+    let mut count = 0;
+    for w in mapped_words.iter_mut() {
+        match client.insert_word(w) {
+            Ok(_) => count += 1,
+            Err(_) => (),
+        }
+    }
+    println!("Added {}/{} words!", count, mapped_words.len());
+}   

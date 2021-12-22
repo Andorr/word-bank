@@ -313,7 +313,9 @@ dependencies = [
  "dotenv",
  "lib",
  "serde",
+ "serde_json",
  "toml",
+ "uuid",
 ]
 
 [[package]]

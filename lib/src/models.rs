@@ -17,7 +17,10 @@ pub enum WordType {
     PREPOSITION,
     CONJUNCTION,
     INTERJECTION,
+    DETERMINER,
+    OTHER,
 }
+
 
 impl fmt::Display for WordType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -40,6 +43,8 @@ impl FromStr for WordType {
             "PREPOSITION" => Ok(WordType::PREPOSITION),
             "CONJUNCTION" => Ok(WordType::CONJUNCTION),
             "INTERJECTION" => Ok(WordType::INTERJECTION),
+            "DETERMINER" => Ok(WordType::DETERMINER),
+            "OTHER" => Ok(WordType::OTHER),
             _ => Err(()),
         }
     }
