@@ -1,11 +1,13 @@
-use crate::{DB, Translation, Word, models::{PageResult, PaginationOptions, WordQueryOptions}};
-use mongodb::{bson::{Bson, DateTime, doc, to_document}, options::FindOptions, sync::{Client, ClientSession, Collection, Database}};
+use crate::{DB, Translation, Word, models::{PageResult, PaginationOptions, WordQueryOptions}, WordUpdateOptions, Folder};
+use mongodb::{bson::{doc, to_document}, options::FindOptions, sync::{Client, ClientSession, Collection, Database}, results::UpdateResult, error::Error};
+use serde::{Serialize, de::DeserializeOwned};
 use uuid::Uuid;
 
-use super::models::{WordDBM, TranslationDBM};
+use super::models::{WordDBM, FolderDBM};
 
 
 const WORD_COL: &'static str = "words"; 
+const FOLDER_COL: &'static str = "folders"; 
 
 pub struct DBOptions {
     pub uri: String,
@@ -30,65 +32,19 @@ impl MongoDBClient {
 
         Ok(c)   
     }
-
-    fn start_transaction(&self) -> Result<ClientSession, ()> {
-        // Set up session, transactions and collections
-        let result =  self.client.start_session(None);
-        if result.is_err() {
-            return Err(())
-        }
-        let mut session = result.unwrap();
-        let result = session.start_transaction(None);
-        if result.is_err() {
-            return Err(())
-        }
-        return Ok(session)
-    }
 }
 
 impl MongoDBClient {
     pub(crate) fn word_collection(&self) -> Collection<WordDBM> {
         self.db.collection::<WordDBM>(WORD_COL)
     }
+
+    pub(crate) fn folder_collection(&self) -> Collection<FolderDBM> {
+        self.db.collection::<FolderDBM>(FOLDER_COL)
+    }
 }
 
 impl DB for MongoDBClient {
-    fn insert_word(&self, word: &mut Word) -> Result<Uuid, ()> {
-        let wdbm: WordDBM = word.into();
-
-        let collection = self.word_collection();
-        match collection.insert_one(wdbm, None) {
-            Ok(_) => {
-                Ok(word.id)
-            }
-            Err(err) => {
-                println!("{:?}", err);
-                Err(())
-            }
-        }
-    }
-    
-    fn insert_translation(&self, word_id: String, translation: &mut Translation) -> Result<Uuid, ()> {
-        translation.id = Uuid::new_v4();
-        let tdbm: TranslationDBM = (&*translation).into();
-
-        let word_col = self.word_collection();
-        let update_result = word_col.update_one(
-            doc!{"_id": Bson::String(word_id)}, 
-            doc!{"$push": doc!{
-                "translations": to_document(&tdbm).unwrap(),
-            }},None);
-
-        match update_result {
-            Ok(_) => {
-                Ok(translation.id)
-            }   
-            Err(err) => {
-                println!("{:?}", err);
-                Err(())
-            }
-        }
-    }
     
     fn query_words(&self, query_options: WordQueryOptions, pagination: PaginationOptions) -> Result<PageResult<Word>, ()> {
         let col = self.word_collection();
@@ -101,12 +57,12 @@ impl DB for MongoDBClient {
 
         let result = col.find(query_options.clone().as_query_doc(), filter_options);
         if result.is_err() {
-            println!("Find: {:?}", result.unwrap_err());
+            // println!("Find: {:?}", result.unwrap_err());
             return Err(())
         }
         let result_all = col.count_documents(query_options.as_query_doc(), None);
         if result.is_err() {
-            println!("Count: {:?}", result.unwrap_err());
+            // println!("Count: {:?}", result.unwrap_err());
             return Err(())
         }
         let cursor = result.unwrap();
@@ -125,59 +81,95 @@ impl DB for MongoDBClient {
             results: words,
         })
     }
+    
+    fn get_words(&self, ids: Vec<Uuid>) -> Result<Vec<Word>, ()> {
+        self.handle_get_words(ids)
+    }    
 
-    fn delete_word(&self, word_id: Uuid) -> Result<(), ()> {       
-        // Delete both the word and its related translations
-        let word_col = self.word_collection();
-        let result_word_delete = word_col.delete_one(
-            doc!{"_id": word_id.clone() },
-            None
-        );
-        if result_word_delete.is_err() {
-            return Err(());
-        }
-        
-        Ok(())
+    fn insert_word(&self, word: &mut Word) -> Result<Uuid, ()> {
+        self.handle_insert_word(word)
+    }
+
+    fn insert_translation(&self, word_id: String, translation: &mut Translation) -> Result<Uuid, ()> {
+        self.handle_insert_translation(word_id, translation)
     }
     
-    fn update_word(&self, update_options: &crate::models::WordUpdateOptions) -> Result<(), ()> {
-        let result = self.start_transaction();
+    fn delete_word(&self, word_id: Uuid) -> Result<(), ()> {
+        self.handle_delete_word(word_id)
+    }
+    
+    fn update_word(&self, update_options: &WordUpdateOptions) -> Result<(), ()> {
+        self.handle_update_word(update_options)
+    }
+
+    fn get_folder(&self, folder_id: Uuid) -> Result<Folder, ()> {
+        self.handle_get_folder(folder_id)
+    }
+
+    fn insert_folder(&self, folder: &mut Folder) -> Result<Uuid, ()> {
+        self.handle_insert_folder(folder)
+    }
+
+    fn delete_folder(&self, folder_id: Uuid) -> Result<(), ()> {
+        self.handle_delete_folder(folder_id)
+    }
+
+    fn update_folder(&self, update_options: &crate::models::FolderUpdateOptions) -> Result<(), ()> {
+        self.handle_update_folder(update_options)
+    }
+}
+
+impl MongoDBClient {
+    pub fn fetch_entity<T>(&self, uuid: Uuid, collection: &Collection<T>, session: &mut ClientSession) -> Result<T, ()>
+    where T: DeserializeOwned + Unpin + Send + Sync {
+        let fetch_result = collection.find_one_with_session(
+            doc!{ "_id": uuid }, 
+            None,
+            session
+        );
+        if fetch_result.is_err() {
+            return Err(())
+        }
+        let fdbm = match fetch_result.unwrap() {
+            Some(f) => f,
+            None => return Err(())
+        };
+
+        return Ok(fdbm)
+    }
+
+    pub fn update_entity<T>(&self, uuid: Uuid, collection: &Collection<T>, data: &T, session: &mut ClientSession) -> Result<UpdateResult, Error>
+    where T: Serialize
+    {
+        collection.update_one_with_session(
+            doc!{ "_id": uuid }, 
+            doc!{"$set": to_document(data).unwrap()},
+            None, session)
+    }
+
+    pub fn start_transaction(&self) -> Result<ClientSession, ()> {
+        // Set up session, transactions and collections
+        let result =  self.client.start_session(None);
         if result.is_err() {
             return Err(())
         }
         let mut session = result.unwrap();
-
-        // Fetch word
-        let word_col = self.word_collection();
-        let word_result = word_col.find_one_with_session(
-            doc!{ "_id": update_options.id.clone() }, 
-            None,
-            &mut session
-        );
-        if word_result.is_err() {
-            return Err(())
-        }
-        let mut wdbm = match word_result.unwrap() {
-            Some(w) => w,
-            None => return Err(())
-        };
-        let updated_at = DateTime::now();
-        wdbm.update(update_options, updated_at);
-    
-
-        let result = word_col.update_one_with_session(
-            doc!{ "_id": wdbm._id.clone() }, 
-            doc!{"$set": to_document(&wdbm).unwrap()},
-            None, &mut session);
+        let result = session.start_transaction(None);
         if result.is_err() {
-            let _ = session.abort_transaction();
-            return Err(())
-        }  
-
-        if let Err(_) = session.commit_transaction() {
             return Err(())
         }
-        
-        Ok(())
+        return Ok(session)
     }
-}
+
+    pub fn close_transaction(&self, session: &mut ClientSession, abort: bool) -> Result<(), ()> {
+        if abort {
+            if let Err(_) = session.abort_transaction() {
+                return Err(())
+            }
+        } 
+        else if let Err(_) = session.commit_transaction() {
+            return Err(())
+        }
+        return Ok(())
+    }
+} 

@@ -29,7 +29,6 @@ impl fmt::Display for WordType {
 }
 
 impl FromStr for WordType {
-
     type Err = ();
 
     fn from_str(input: &str) -> Result<WordType, Self::Err> {
@@ -108,6 +107,38 @@ impl Translation {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Folder {
+    pub id: Uuid,
+    pub name: String,
+    pub parent: Option<Uuid>,
+    pub words: Vec<Uuid>,
+
+    #[serde(with = "datetime_serializer")]
+    pub created_at: DateTime<Utc>,
+
+    #[serde(with = "datetime_serializer")]
+    pub updated_at: DateTime<Utc>,
+}
+
+impl Folder {
+    pub fn new(name: &str) -> Folder {
+        Folder {
+            id: Uuid::new_v4(),
+            name: name.to_string(),
+            parent: None,
+            words: Vec::new(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
+
+    pub fn update_time(&mut self, time: DateTime<Utc>) {
+        self.created_at = time;
+        self.updated_at = time;
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordQueryOptions {
     pub query: Option<String>,
     pub word: Option<String>,
@@ -175,4 +206,13 @@ pub struct WordUpdateOptions {
     pub kind: Option<WordType>,
     pub tags: Option<Vec<String>>,
     pub translations: Option<Vec<Translation>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FolderUpdateOptions {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub parent: Option<Option<Uuid>>,
+    pub add: Option<Vec<Uuid>>,
+    pub remove: Option<Vec<Uuid>>,
 }

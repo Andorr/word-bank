@@ -1,8 +1,7 @@
 use mongodb::bson::{self, DateTime, Document, doc};
 use serde::{Serialize, Deserialize};
-
 use mongodb::bson::serde_helpers::uuid_as_binary;
-use crate::{PaginationOptions, Translation, Word, models::{WordQueryOptions, WordType, WordUpdateOptions}};
+use crate::{PaginationOptions, Translation, Word, models::{WordQueryOptions, WordType, WordUpdateOptions, FolderUpdateOptions}, Folder};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordDBM {
@@ -88,6 +87,68 @@ impl From<& TranslationDBM> for Translation {
         }
     }
 }
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FolderDBM {
+    #[serde(with = "uuid_as_binary")]
+    pub _id: uuid::Uuid,
+    pub name: String,
+    pub parent: Option<uuid::Uuid>,
+    pub words: Vec<uuid::Uuid>, 
+    pub created_at: DateTime,
+    pub updated_at: DateTime,
+}
+
+impl FolderDBM {
+    pub fn update(&mut self, update: &FolderUpdateOptions, updated_at: DateTime) {
+        if let Some(name) = update.name.clone() {
+            self.name = name;
+        }
+        if let Some(parent) = update.parent.clone() {
+            self.parent = parent;
+        }
+        if let Some(words_to_add) = update.add.clone() {
+            self.words.extend(words_to_add);
+            self.words.sort_unstable();
+            self.words.dedup();
+        }
+        if let Some(words_to_remove) = update.remove.clone() {
+            self.words = self.words.clone().into_iter()
+                .filter(|w_id| !words_to_remove.contains(w_id))
+                .collect();
+        }
+
+        self.updated_at = updated_at;
+    }
+}
+
+impl From<FolderDBM> for Folder {
+    fn from(folder: FolderDBM) -> Self {
+        Folder { 
+            id: folder._id,
+            name: folder.name.clone(),
+            parent: folder.parent.clone(),
+            words: folder.words.clone(),
+            created_at: folder.created_at.into(),
+            updated_at: folder.updated_at.into(),
+        }
+    }
+}
+
+impl From<&mut Folder> for FolderDBM {
+    fn from(folder: &mut Folder) -> Self {
+        FolderDBM {
+            _id: folder.id,
+            name: folder.name.clone(),
+            parent: folder.parent.clone(),
+            words: folder.words.clone(),
+            created_at: folder.created_at.into(),
+            updated_at: folder.updated_at.into(),
+        }
+    }
+}
+
 
 impl WordQueryOptions {
     pub fn as_query_doc(self) -> Document {

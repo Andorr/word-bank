@@ -8,9 +8,9 @@ pub use self::models::{
     Word,
     Translation,
     WordType,
+    Folder,
     WordQueryOptions,
     PaginationOptions,
     PageResult,
     WordUpdateOptions,
 };
-// pub use self::mongo::{DBOptions, initialize};
