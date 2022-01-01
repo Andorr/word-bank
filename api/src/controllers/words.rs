@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 
-use lib::{PaginationOptions, Translation, Word, WordQueryOptions, WordUpdateOptions, WordType};
+use lib::{PaginationOptions, Translation, Word, WordQueryOptions, WordUpdateOptions, WordType, FolderUpdateOptions};
 use serde::{Deserialize, Serialize};
 use tide::{Request, Response, Body};
 use uuid::Uuid;
 
 
-use crate::{state::State, error::{err_server_error, build_error_res}};
+use crate::{state::State, error::{err_server_error, build_error_res}, constants::ROOT_FOLDER};
 
 #[derive(Debug, Clone, Deserialize)]
 struct PaginationOptionalOptions {
@@ -36,6 +36,7 @@ pub async fn words_list(req: Request<State>) -> tide::Result {
             .build(),
         Err(_) => err_server_error()
     };
+
     Ok(res)
 }
 
@@ -45,6 +46,7 @@ struct BodyWordUpsertOptions {
     translations: Vec<String>,
     kind: WordType,
     tags: Option<Vec<String>>,
+    folder: Option<Uuid>,
 }
 
 pub async fn word_create(mut req: Request<State>) -> tide::Result {
@@ -57,6 +59,7 @@ pub async fn word_create(mut req: Request<State>) -> tide::Result {
     let state = req.state();
     let client = &state.client;
 
+    // TODO: Make a ::from_options function for this
     let mut word = Word::from_value(&insert_options.value);
     word.kind = insert_options.kind;
     word.translations = insert_options.translations
@@ -67,13 +70,32 @@ pub async fn word_create(mut req: Request<State>) -> tide::Result {
         word.tags = tags;
     }
 
-    let response = match client.insert_word(&mut word) {
+    let mut context = client.new_context().unwrap();
+
+    // Insert word
+    let word_result = client.insert_word(&mut context, &mut word);
+    if word_result.is_err() {
+        return Ok(err_server_error());
+    }
+    
+    // Add word into folder
+    let folder_result = client.update_folder(&mut context, FolderUpdateOptions{
+        id: insert_options.folder.unwrap_or(Uuid::parse_str(ROOT_FOLDER).unwrap()),
+        name: None,
+        parent: None,
+        add: Some(vec![word.id]),
+        remove: None,
+    });
+    if folder_result.is_err() {
+        return Ok(err_server_error());
+    }
+    // Commit
+    let response = match context.commit() {
         Ok(_) => Response::builder(201)
-            .body(Body::from_json(&word)?)    
-            .build(),
+        .body(Body::from_json(&word)?)    
+        .build(),
         Err(_) => err_server_error()
     };
-
     Ok(response)
 }
 
@@ -118,9 +140,16 @@ pub async fn words_delete(req: Request<State>) -> tide::Result {
     let state = req.state();
     let client = &state.client;
 
-    let res = match client.delete_word(word_id) {
+    let mut ctx = client.new_context().unwrap();
+
+    // TODO: Add context, and delete word from corresponding folders!
+    let res = match client.delete_word(&mut ctx, word_id) {
         Ok(_) => Response::builder(204).build(),
         Err(_) => err_server_error()
     };
-    Ok(res)
+
+    match ctx.commit() {
+        Ok(_) => Ok(res),
+        Err(_) => Ok(err_server_error())
+    }
 }

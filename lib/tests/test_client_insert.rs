@@ -6,7 +6,6 @@ extern crate dotenv;
 fn test_client_insert_words() {
     dotenv::dotenv().ok();
 
-
     let options = load_options_from_env().unwrap();
     let client = WordBankClient::from_mongo(options).unwrap();
 
@@ -14,7 +13,9 @@ fn test_client_insert_words() {
     word.kind = WordType::VERB;
     word.translations = vec![Translation::from_value("To live")];
 
-    let result = client.insert_word(&mut word);
+    let mut ctx = client.new_context().unwrap();
+
+    let result = client.insert_word(&mut ctx, &mut word);
     assert!(result.is_ok());
     assert_eq!(word.id, result.unwrap());
 }

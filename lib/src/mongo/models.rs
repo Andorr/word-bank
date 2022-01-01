@@ -1,7 +1,7 @@
 use mongodb::bson::{self, DateTime, Document, doc};
 use serde::{Serialize, Deserialize};
 use mongodb::bson::serde_helpers::uuid_as_binary;
-use crate::{PaginationOptions, Translation, Word, models::{WordQueryOptions, WordType, WordUpdateOptions, FolderUpdateOptions}, Folder};
+use crate::{PaginationOptions, Translation, Word, models::{WordQueryOptions, WordType, WordUpdateOptions, FolderUpdateOptions, FolderQueryOptions}, Folder};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordDBM {
@@ -197,6 +197,31 @@ impl From<WordQueryOptions> for Document {
         }
 
         document
+    }
+}
+
+impl FolderQueryOptions {
+    pub fn as_query_doc(self) -> Document {
+        let mut document = Document::new();
+        
+        if let Some(query) = self.query {
+            document.insert("name",
+                bson::Regex { pattern: query.clone(), options: "i".to_string()}
+            );
+        }
+        if let Some(words) = self.words {
+            document.insert("words", doc!{
+                "$in": words,
+            });
+        }
+
+        document
+    }
+
+    pub fn as_match_doc(self) -> Document {
+        doc!{
+            "$match": self.as_query_doc(),
+        }
     }
 }
 

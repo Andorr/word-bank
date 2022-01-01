@@ -2,6 +2,7 @@ mod controllers;
 mod middleware;
 mod state;
 mod error;
+mod constants;
 
 use std::env;
 use lib::utils::load_env;
@@ -57,6 +58,11 @@ async fn main() -> tide::Result<()> {
         .at("/api/v1/words/:id")
         .with(authorization.clone())
         .delete(controllers::words_delete);
+
+    app
+        .at("/api/v1/folders")
+        .with(authorization.clone())
+        .post(controllers::folder_create);
 
     app.listen(format!("{}:{}", host, port)).await?;
 

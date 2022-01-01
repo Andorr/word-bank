@@ -9,8 +9,9 @@ pub use self::models::{
     Translation,
     WordType,
     Folder,
+    FolderUpdateOptions,
     WordQueryOptions,
+    WordUpdateOptions,
     PaginationOptions,
     PageResult,
-    WordUpdateOptions,
 };

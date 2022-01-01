@@ -4,7 +4,6 @@ use lib::{WordBankClient, mongo::load_options_from_env};
 
 #[derive(Clone)]
 pub struct State {
-
     pub client: Arc<WordBankClient>,
 }
 

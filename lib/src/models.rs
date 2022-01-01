@@ -158,6 +158,24 @@ impl Default for WordQueryOptions {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FolderQueryOptions {
+    pub query: Option<String>,
+    pub words: Option<Vec<Uuid>>,
+}
+
+impl FolderQueryOptions {
+    pub fn empty() -> FolderQueryOptions {
+        FolderQueryOptions { query: None, words: None }
+    }
+}
+
+impl Default for FolderQueryOptions {
+    fn default() -> Self {
+        FolderQueryOptions::empty()
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PaginationOptions {
     pub limit: usize,

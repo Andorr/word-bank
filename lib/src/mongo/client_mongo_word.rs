@@ -1,16 +1,16 @@
 use mongodb::bson::{doc, DateTime, to_document, Bson};
 use uuid::Uuid;
 
-use crate::{WordUpdateOptions, Word, Translation};
+use crate::{WordUpdateOptions, Word, Translation, client::Context};
 
 use super::{MongoDBClient, models::{WordDBM, TranslationDBM}};
 
 impl MongoDBClient {
-    pub fn handle_insert_word(&self, word: &mut Word) -> Result<Uuid, ()> {
+    pub fn handle_insert_word(&self, ctx: &mut Context, word: &mut Word) -> Result<Uuid, ()> {
         let wdbm: WordDBM = word.into();
 
         let collection = self.word_collection();
-        match collection.insert_one(wdbm, None) {
+        match collection.insert_one_with_session(wdbm, None, &mut ctx.session) {
             Ok(_) => {
                 Ok(word.id)
             }
@@ -43,12 +43,13 @@ impl MongoDBClient {
         }
     }
     
-    pub fn handle_delete_word(&self, word_id: Uuid) -> Result<(), ()> {       
+    pub fn handle_delete_word(&self, ctx: &mut Context, word_id: Uuid) -> Result<(), ()> {       
         // Delete both the word and its related translations
         let word_col = self.word_collection();
-        let result_word_delete = word_col.delete_one(
+        let result_word_delete = word_col.delete_one_with_session(
             doc!{"_id": word_id.clone() },
-            None
+            None,
+            &mut ctx.session
         );
         if result_word_delete.is_err() {
             return Err(());

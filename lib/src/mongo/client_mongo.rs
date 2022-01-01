@@ -1,9 +1,9 @@
-use crate::{DB, Translation, Word, models::{PageResult, PaginationOptions, WordQueryOptions}, WordUpdateOptions, Folder};
+use crate::{DB, Translation, Word, models::{PageResult, PaginationOptions, WordQueryOptions}, WordUpdateOptions, Folder, client::Context};
 use mongodb::{bson::{doc, to_document}, options::FindOptions, sync::{Client, ClientSession, Collection, Database}, results::UpdateResult, error::Error};
 use serde::{Serialize, de::DeserializeOwned};
 use uuid::Uuid;
 
-use super::models::{WordDBM, FolderDBM};
+use super::{models::{WordDBM, FolderDBM}, context::MongoContext};
 
 
 const WORD_COL: &'static str = "words"; 
@@ -46,6 +46,19 @@ impl MongoDBClient {
 
 impl DB for MongoDBClient {
     
+    fn new_context(&self) -> Result<Context, ()> {
+        let result =  self.client.start_session(None);
+        if result.is_err() {
+            return Err(())
+        }
+        let mut session = result.unwrap();
+        let result = session.start_transaction(None);
+        if result.is_err() {
+            return Err(())
+        }
+        Ok(MongoContext::new(session))
+    }
+
     fn query_words(&self, query_options: WordQueryOptions, pagination: PaginationOptions) -> Result<PageResult<Word>, ()> {
         let col = self.word_collection();
     
@@ -86,36 +99,42 @@ impl DB for MongoDBClient {
         self.handle_get_words(ids)
     }    
 
-    fn insert_word(&self, word: &mut Word) -> Result<Uuid, ()> {
-        self.handle_insert_word(word)
+    fn insert_word(&self, ctx: &mut Context, word: &mut Word) -> Result<Uuid, ()> {
+        self.handle_insert_word(ctx, word)
     }
 
     fn insert_translation(&self, word_id: String, translation: &mut Translation) -> Result<Uuid, ()> {
         self.handle_insert_translation(word_id, translation)
     }
     
-    fn delete_word(&self, word_id: Uuid) -> Result<(), ()> {
-        self.handle_delete_word(word_id)
+    fn delete_word(&self, ctx: &mut Context, word_id: Uuid) -> Result<(), ()> {
+        self.handle_delete_word(ctx, word_id)
     }
     
     fn update_word(&self, update_options: &WordUpdateOptions) -> Result<(), ()> {
         self.handle_update_word(update_options)
     }
 
+    // ---- FOLDER IMPLEMENTATIONS ----
+
+    fn query_folders(&self, ctx: &mut Context, query_options: crate::models::FolderQueryOptions, pagination: PaginationOptions) -> Result<PageResult<Folder>, ()> {
+        self.handle_query_folders(ctx, query_options, pagination)
+    }
+
     fn get_folder(&self, folder_id: Uuid) -> Result<Folder, ()> {
         self.handle_get_folder(folder_id)
     }
 
-    fn insert_folder(&self, folder: &mut Folder) -> Result<Uuid, ()> {
-        self.handle_insert_folder(folder)
+    fn insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()> {
+        self.handle_insert_folder(ctx, folder)
     }
 
     fn delete_folder(&self, folder_id: Uuid) -> Result<(), ()> {
         self.handle_delete_folder(folder_id)
     }
 
-    fn update_folder(&self, update_options: &crate::models::FolderUpdateOptions) -> Result<(), ()> {
-        self.handle_update_folder(update_options)
+    fn update_folder(&self, ctx: &mut Context, update_options: &crate::models::FolderUpdateOptions) -> Result<(), ()> {
+        self.handle_update_folder(ctx, update_options)
     }
 }
 

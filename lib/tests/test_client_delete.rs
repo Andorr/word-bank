@@ -15,13 +15,15 @@ fn test_client_delete_word() {
     word.kind = WordType::VERB;
     word.translations = vec![Translation::from_value("To live")];
 
-    let result = client.insert_word(&mut word);
+    let mut context = client.new_context().unwrap();
+
+    let result = client.insert_word(&mut context, &mut word);
     assert!(result.is_ok());
     assert_eq!(word.id, result.unwrap());
     
     // TODO: Fetch one the new word to verify its existence
     
-    let result = client.delete_word(word.id);
+    let result = client.delete_word(&mut context, word.id);
     assert!(result.is_ok());
 
     // TODO: Try to fetch one the new word to verify its nonexistence

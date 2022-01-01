@@ -4,7 +4,9 @@ mod db;
 mod env;
 mod client_mongo_folder;
 mod client_mongo_word;
+mod context;
 
 pub use db::initialize;
 pub use client_mongo::{DBOptions, MongoDBClient};
+pub use context::MongoContext;
 pub use env::load_options_from_env;
