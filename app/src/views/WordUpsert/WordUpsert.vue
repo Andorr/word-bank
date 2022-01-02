@@ -182,7 +182,7 @@ export default defineComponent({
             });
 
             const actions = (this.id) ? ACTIONS.WORD_UPDATE : ACTIONS.WORD_INSERT;
-            this.$store.dispatch(actions, word)
+            this.$store.dispatch(actions, { word, folderId: this.$route.query.parent as string})
                 .then(() => {
                     this.$router.back();
                 })

@@ -85,7 +85,7 @@ impl MongoDBClient {
         let collection = self.word_collection();
         let result = collection.find(doc!{
             "_id": doc!{
-                "in": ids,
+                "$in": ids,
             } 
         }, 
             None);

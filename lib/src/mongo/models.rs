@@ -94,7 +94,8 @@ pub struct FolderDBM {
     #[serde(with = "uuid_as_binary")]
     pub _id: uuid::Uuid,
     pub name: String,
-    pub parent: Option<uuid::Uuid>,
+    
+    pub parent: Option<bson::Uuid>, // Using bson::Uuid here, due to serialization difficulties with Option<T>.
     pub words: Vec<uuid::Uuid>, 
     pub created_at: DateTime,
     pub updated_at: DateTime,
@@ -106,7 +107,11 @@ impl FolderDBM {
             self.name = name;
         }
         if let Some(parent) = update.parent.clone() {
-            self.parent = parent;
+            if let Some(uuid) = parent {
+                self.parent = Some(bson::Uuid::from_bytes(*uuid.as_bytes()));
+            } else {
+                self.parent = None
+            }
         }
         if let Some(words_to_add) = update.add.clone() {
             self.words.extend(words_to_add);
@@ -128,7 +133,7 @@ impl From<FolderDBM> for Folder {
         Folder { 
             id: folder._id,
             name: folder.name.clone(),
-            parent: folder.parent.clone(),
+            parent: if let Some(p) = folder.parent { Some(uuid::Uuid::from_bytes(p.bytes())) } else { None },
             words: folder.words.clone(),
             created_at: folder.created_at.into(),
             updated_at: folder.updated_at.into(),
@@ -141,7 +146,7 @@ impl From<&mut Folder> for FolderDBM {
         FolderDBM {
             _id: folder.id,
             name: folder.name.clone(),
-            parent: folder.parent.clone(),
+            parent: if let Some(p) = folder.parent { Some(bson::Uuid::from_bytes(*p.as_bytes()))} else { None },
             words: folder.words.clone(),
             created_at: folder.created_at.into(),
             updated_at: folder.updated_at.into(),
@@ -209,9 +214,13 @@ impl FolderQueryOptions {
                 bson::Regex { pattern: query.clone(), options: "i".to_string()}
             );
         }
+        if let Some(parent) = self.parent {
+            document.insert("parent", bson::Uuid::parse_str(parent.to_string()).unwrap());
+        }
+
         if let Some(words) = self.words {
             document.insert("words", doc!{
-                "$in": words,
+                "$in": words.iter().map(|w| w.to_string()).collect::<Vec<String>>(),
             });
         }
 

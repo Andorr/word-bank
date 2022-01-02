@@ -28,37 +28,26 @@ impl MongoDBClient {
         let mut cursor = result.unwrap();
         let total_count = result_all.unwrap();
 
-        let words: Vec<Folder> = cursor.iter(&mut ctx.session)
-            .filter(|w| w.is_ok())
-            .map(|w| w.unwrap())
-            .map(|wdbms: FolderDBM| wdbms.into())
+        let folders: Vec<Folder> = cursor.iter(&mut ctx.session)
+            .filter(|f| f.is_ok())
+            .map(|f| f.unwrap())
+            .map(|fdbms: FolderDBM| fdbms.into())
             .collect();
 
         Ok(PageResult::<Folder>{
             total: total_count as usize,
             page: pagination.page.clone(),
-            count: words.len(),
-            results: words,
+            count: folders.len(),
+            results: folders,
         })
 
     }
 
-    pub fn handle_get_folder(&self, folder_id: Uuid) -> Result<Folder, ()> {
-        let mut session = match self.start_transaction() {
-            Ok(session) => session,
-            Err(_) => return Err(())
-        };        
-        
+    pub fn handle_get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()> {
         let folder_collection = self.folder_collection();
-        match self.fetch_entity(folder_id, &folder_collection, &mut session) {
-            Ok(f) => {
-                let _ = self.close_transaction(&mut session, false);
-                Ok(f.into())
-            },
-            Err(_) => {
-                let _ = self.close_transaction(&mut session, true);
-                Err(())
-            }    
+        match self.fetch_entity(folder_id, &folder_collection, &mut ctx.session) {
+            Ok(f) => Ok(f.into()),
+            Err(_) => Err(())
         }
     }
 
@@ -76,17 +65,17 @@ impl MongoDBClient {
         } 
     }
 
-    pub fn handle_delete_folder(&self, folder_id: Uuid) -> Result<(), ()> {
+    pub fn handle_delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()> {
         // Delete both the word and its related translations
         let folder_col = self.folder_collection();
-        let result_folder_delete = folder_col.delete_one(
+        let result_folder_delete = folder_col.delete_one_with_session(
             doc!{"_id": folder_id.clone() },
-            None
+            None,
+            &mut ctx.session
         );
         if result_folder_delete.is_err() {
             return Err(());
         }
-        
         Ok(())
     }
 

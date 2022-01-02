@@ -39,6 +39,9 @@ async fn main() -> tide::Result<()> {
         .expect("'WORDBANK_AUTH_TOKEN' env expected")
     );
 
+
+    // ---- WORD ENDPOINTS ----
+
     app
         .at("/api/v1/words")
         .with(authorization.clone())
@@ -59,10 +62,31 @@ async fn main() -> tide::Result<()> {
         .with(authorization.clone())
         .delete(controllers::words_delete);
 
+
+    // ---- FOLDERS ENDPOINTS ----
+
     app
         .at("/api/v1/folders")
         .with(authorization.clone())
         .post(controllers::folder_create);
+
+    app
+        .at("/api/v1/folders/:id")
+        .with(authorization.clone())
+        .get(controllers::folder_get);
+
+
+    app
+        .at("/api/v1/folders/:id")
+        .with(authorization.clone())
+        .put(controllers::folder_update);
+
+
+    app
+        .at("/api/v1/folders/:id")
+        .with(authorization.clone())
+        .delete(controllers::folder_delete);
+
 
     app.listen(format!("{}:{}", host, port)).await?;
 

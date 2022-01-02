@@ -9,6 +9,7 @@ pub use self::models::{
     Translation,
     WordType,
     Folder,
+    FolderContent,
     FolderUpdateOptions,
     WordQueryOptions,
     WordUpdateOptions,

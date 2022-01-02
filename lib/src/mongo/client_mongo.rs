@@ -121,16 +121,16 @@ impl DB for MongoDBClient {
         self.handle_query_folders(ctx, query_options, pagination)
     }
 
-    fn get_folder(&self, folder_id: Uuid) -> Result<Folder, ()> {
-        self.handle_get_folder(folder_id)
+    fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()> {
+        self.handle_get_folder(ctx, folder_id)
     }
 
     fn insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()> {
         self.handle_insert_folder(ctx, folder)
     }
 
-    fn delete_folder(&self, folder_id: Uuid) -> Result<(), ()> {
-        self.handle_delete_folder(folder_id)
+    fn delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()> {
+        self.handle_delete_folder(ctx, folder_id)
     }
 
     fn update_folder(&self, ctx: &mut Context, update_options: &crate::models::FolderUpdateOptions) -> Result<(), ()> {

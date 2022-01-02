@@ -1,22 +1,19 @@
 <template>
     <ion-item 
-        :key='word.id'
         :button='true'
-        :detail-icon='null'
     >
-   
+        <ion-thumbnail class="flex items-center justify-center">
+            <ion-icon :icon='icons.folder' />
+        </ion-thumbnail>
         <div class="w-full my-2">
             <h4 class="mb-0 font-bold">
-                {{ word.value }}
+                {{ folder.name }}
             </h4>
             <p class="text-gray-300 mb-0">
-                {{ word.translations.map(t => t.value).join(', ') }}
+                ({{ folder.words.length }})
             </p>
             <ion-ripple-effect></ion-ripple-effect>
         </div>
-        <p slot="end" class="text-gray-400 text-xs">
-            {{ word.kind }}
-        </p>
     </ion-item>
 </template>
 
@@ -24,40 +21,39 @@
 import { defineComponent } from 'vue';
 
 // Logic
-import { Word } from '@/lib/models';
+import { Folder } from '@/lib/models';
 
 // Components
 import{
     IonItem,
+    IonThumbnail,
+    IonIcon,
     IonRippleEffect,
 } from '@ionic/vue';
 
-
 // Icons
-import { language } from 'ionicons/icons';
+import { folder } from 'ionicons/icons';
 
 export default defineComponent({
-    name: 'WordItem',
+    name: 'FolderItem',
     components: {
         IonItem,
+        IonThumbnail,
+        IonIcon,
         IonRippleEffect,
     },
     props: {
-        word: Word,
+        folder: Folder,
     },
     data() {
         return {
-            icons: { language },
+            icons: { folder }
         }
     }
 })
 </script>
 
 <style scoped>
-.root > div {
-    padding-left: 0px !important;
-}
-
 .ripple-parent {
     position: relative;
     overflow: hidden;

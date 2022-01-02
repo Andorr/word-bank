@@ -1,4 +1,4 @@
-import { PageResult, PaginationOptions, Word, WordQueryOptions } from "./models";
+import { Folder, FolderResult, PageResult, PaginationOptions, Word, WordQueryOptions } from "./models";
 
 export default class WordBank {
 
@@ -23,14 +23,15 @@ export default class WordBank {
         });
     }
 
-    static insertWord(word: Word): Promise<Word> {
+    static insertWord(word: Word, folderId?: string): Promise<Word> {
         return this.doRequest(
             "POST",
             "api/v1/words",
             undefined,
             {
                 ...word.toObject(),
-                translations: word.translations.map(it => it.value)
+                translations: word.translations.map(it => it.value),
+                folder: folderId,
             },
         ).then((res) => {
             return res.json();
@@ -65,6 +66,49 @@ export default class WordBank {
         ).then(() => id)
     }
 
+    static getFolder(id: string): Promise<FolderResult> {
+        return this.doRequest(
+            "GET",
+            "api/v1/folders/".concat(id),
+        ).then((res) => res.json())
+        .then((result: FolderResult) => {
+            const data = result;
+            data.data = Folder.fromObject(data.data);
+            data.content.folders = data.content.folders.map(f => Folder.fromObject(f));
+            data.content.words = data.content.words.map(w => Word.fromObject(w));
+            return data;
+        });
+    }
+
+    static insertFolder(folder: Folder): Promise<Folder> {
+        return this.doRequest(
+            "POST",
+            "api/v1/folders",
+            undefined,
+            folder.toObject()
+        )
+        .then((res) => res.json())
+        .then((f) => Folder.fromObject(f));
+    }
+
+    static deleteFolder(id: string): Promise<string> {
+        return this.doRequest(
+            "DELETE",
+            "api/v1/folders/".concat(id)
+        ).then(() => id);
+    }
+
+    static updateFolder(folder: Folder): Promise<Folder> {
+        return this.doRequest(
+            "PUT",
+            "api/v1/folders/".concat(folder.id),
+            undefined,
+            folder.toObject(),
+        ).then(() => {
+            return folder;
+        });
+    }
+
 
     private static doRequest(method: string, path: string, params: Record<string, any> = {}, body: any = undefined): Promise<Response> {
         const query = {
@@ -85,6 +129,12 @@ export default class WordBank {
         }
 
         return fetch(this.baseURL.concat(path, '?', queryString), options)
+            .then((res) => {
+                /* if(res.status >= 400) {
+                    throw 
+                } */
+                return res;
+            })
     }
 
 }

@@ -1,11 +1,15 @@
-import { Word } from '@/lib/models';
+import { Folder, Word } from '@/lib/models';
 import { MutationTree } from 'vuex';
 import { State } from '.';
 
 export const enum MUTATIONS {
     WORD_SET = 'WORD_SET',
     WORDS_SET = 'WORDS_SET',
-    WORDS_DELETE = 'WORDS_DELETE',
+    WORD_DELETE = 'WORD_DELETE',
+
+    FOLDER_SET = 'FOLDER_SET',
+    FOLDERS_SET = 'FOLDERS_SET',
+    FOLDER_DELETE = 'FOLDER_DELETE',
 }
 
 export const enum LIST_OPTIONS {
@@ -35,11 +39,24 @@ export const mutations: MutationTree<State> = {
             state.wordIdsList.push(...payload.words.map(w => w.id))
         }
     },
-    [MUTATIONS.WORDS_DELETE](state: State, payload: { id: string } = { id: '' }) {
+    [MUTATIONS.WORD_DELETE](state: State, payload: { id: string } = { id: '' }) {
         delete state.words[payload.id]
         const index = state.wordIdsList.findIndex(id => id === payload.id)
         if(index !== -1) {
             state.wordIdsList.splice(index, 1)
         }
+    },
+
+
+    [MUTATIONS.FOLDER_SET](state: State, payload: Folder) {
+        state.folders[payload.id] = payload;
+    },
+    [MUTATIONS.FOLDERS_SET](state: State, payload: Folder[]) {
+        payload.forEach(f => {
+            state.folders[f.id] = f;
+        });
+    },
+    [MUTATIONS.FOLDER_DELETE](state: State, payload: { id: string }) {
+        delete state.folders[payload.id];
     }
 }

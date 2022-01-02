@@ -2,7 +2,7 @@ use chrono::{Utc};
 use uuid::Uuid;
 
 pub use crate::models::{Word, Translation, Folder};
-use crate::{models::{PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions, FolderUpdateOptions, FolderQueryOptions}, mongo::{MongoDBClient, DBOptions, MongoContext}};
+use crate::{models::{PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions, FolderUpdateOptions, FolderQueryOptions, FolderContent}, mongo::{MongoDBClient, DBOptions, MongoContext}};
 
 
 pub type Context = MongoContext;
@@ -18,10 +18,10 @@ pub trait DB {
     fn get_words(&self, ids: Vec<Uuid>) -> Result<Vec<Word>, ()>;
 
     fn insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()>;
-    fn delete_folder(&self, folder_id: Uuid) -> Result<(), ()>;
+    fn delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()>;
     fn update_folder(&self, ctx: &mut Context, update_options: &FolderUpdateOptions) -> Result<(), ()>;
     fn query_folders(&self, ctx: &mut Context, query_options: FolderQueryOptions, pagination: PaginationOptions) -> Result<PageResult<Folder>, ()>;
-    fn get_folder(&self, folder_id: Uuid) -> Result<Folder, ()>;
+    fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()>;
 }
 
 #[derive(Clone)]
@@ -69,6 +69,7 @@ impl WordBankClient {
             FolderQueryOptions {
                 query: None,
                 words: Some(vec![word_id.clone()]),
+                parent: None,
             }, 
             PaginationOptions::new(100, 1)
         ) {
@@ -111,8 +112,8 @@ impl WordBankClient {
         self.db.update_folder(ctx, &update_options)
     }
 
-    pub fn delete_folder(&self, folder_id: Uuid) -> Result<(), ()> {
-        let folder = match self.db.get_folder(folder_id) {
+    pub fn delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()> {
+        let folder = match self.db.get_folder(ctx, folder_id) {
             Ok(f) => f,
             Err(_) => return Err(())
         };
@@ -122,13 +123,33 @@ impl WordBankClient {
         }
 
 
-        self.db.delete_folder(folder.id)
+        self.db.delete_folder(ctx, folder.id)
     }
 
-    pub fn get_folder(&self, folder_id: Uuid) -> Result<Folder, ()> {
-        match self.db.get_folder(folder_id) {
-            Ok(f) => Ok(f),
-            Err(_) => Err(())
-        }
+    pub fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()> {
+        self.db.get_folder(ctx, folder_id)
+    }
+
+    pub fn get_folder_content(&self, ctx: &mut Context, folder: &Folder) -> Result<FolderContent, ()> {
+        
+        let folders = match self.db.query_folders(ctx, 
+            FolderQueryOptions {
+                query: None,
+                words: None,
+                parent: Some(folder.id.clone()),
+            }, PaginationOptions::new(100, 1)) {
+            Ok(fs) => fs,
+            Err(_) => return Err(())
+        };
+
+        let words = match self.db.get_words(folder.words.clone()) {
+            Ok(words) => words,
+            Err(_) => return Err(())
+        };
+
+        Ok(FolderContent{
+            words: words,
+            folders: folders.results,
+        })
     }
 }

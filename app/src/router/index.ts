@@ -33,6 +33,14 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/WordSearch/WordSearch.vue')
       },
       {
+        path: URLS.tabs.concat(URLS.folders, URLS.foldersUpsert),
+        component: () => import('@/views/FolderUpsert/FolderUpsert.vue')
+      },
+      {
+        path: URLS.tabs.concat(URLS.folders, '/:id'),
+        component: () => import('@/views/FolderView/FolderView.vue')
+      },
+      {
         path: 'tab2',
         component: () => import('@/views/Tab2.vue')
       },

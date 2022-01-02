@@ -139,6 +139,12 @@ impl Folder {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FolderContent {
+    pub words: Vec<Word>,
+    pub folders: Vec<Folder>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordQueryOptions {
     pub query: Option<String>,
     pub word: Option<String>,
@@ -162,11 +168,12 @@ impl Default for WordQueryOptions {
 pub struct FolderQueryOptions {
     pub query: Option<String>,
     pub words: Option<Vec<Uuid>>,
+    pub parent: Option<Uuid>,
 }
 
 impl FolderQueryOptions {
     pub fn empty() -> FolderQueryOptions {
-        FolderQueryOptions { query: None, words: None }
+        FolderQueryOptions { query: None, words: None, parent: None }
     }
 }
 
@@ -217,7 +224,7 @@ pub struct PageResult<T> {
     pub results: Vec<T>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordUpdateOptions {
     pub id: Uuid,
     pub word: Option<String>,

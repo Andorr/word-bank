@@ -2,45 +2,30 @@
   <ion-page>
     <ion-header mode="ios">
       <ion-toolbar>
-        <ion-title>Words</ion-title>
+        <ion-buttons slot="start">
+            <ion-back-button></ion-back-button>
+        </ion-buttons>
+        <div class="flex items-center" slot="end">
+            <icon-btn @click='editCurrentFolder()'>
+                <ion-icon class="text-2xl" :icon="icons.createOutline"></ion-icon>
+            </icon-btn>
+            <icon-btn @click='goToFolderUpsert()'>
+                <ion-icon class="text-2xl" :icon="icons.addCircle"></ion-icon>
+            </icon-btn>
+            <icon-btn @click='goToWordUpsert()'>
+                <ion-icon class="text-2xl" :icon="icons.add"></ion-icon>
+            </icon-btn>
+        </div>
       </ion-toolbar>
+      
     </ion-header>
-    <ion-content >
-      <ion-header collapse="condense">
+    <ion-content :fullscreen="true">
+      <ion-header  collapse="condense">
         <ion-toolbar>
-          <ion-grid size="3">
-            <ion-row>
-              <ion-col>
-                <ion-title size="large" class="">Words</ion-title>
-              </ion-col>
-
-            <ion-col size="auto" class="ion-align-self-end">
-              <div class="flex items-center">
-                <icon-btn @click='goToWordSearch()'>
-                    <ion-icon class="text-2xl" :icon="icons.search"></ion-icon>
-                </icon-btn>
-                <icon-btn @click='goToFolderUpsert()'>
-                    <ion-icon class="text-2xl" :icon="icons.addCircle"></ion-icon>
-                </icon-btn>
-                <icon-btn @click='goToWordUpsert()'>
-                    <ion-icon class="text-2xl" :icon="icons.add"></ion-icon>
-                </icon-btn>
-              </div>
-            </ion-col>
-            </ion-row>
-          </ion-grid>
+            <ion-title size="large">{{ name }}</ion-title>
         </ion-toolbar>
+        <ion-progress-bar v-if='isLoading' type='indeterminate' />
       </ion-header>
-
-      <ion-refresher slot="fixed" @ionRefresh='refresh($event)'>
-        <ion-refresher-content
-          :pulling-icon="icons.chevronDownCircleOutline"
-          pulling-text="Pull to refresh"
-          refreshing-spinner="dots"
-          refreshing-text="Refreshing...">
-        </ion-refresher-content>
-      </ion-refresher>
-
       <ion-list v-if='!isLoading'>
         <folder-item 
           v-for='f in folders' 
@@ -78,41 +63,34 @@ import {
   IonToolbar,
   IonIcon,
   IonSpinner,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonTitle,
   IonContent,
   IonList,
-  IonRefresher,
-  IonRefresherContent, 
+  IonProgressBar,
+  IonButtons,
+  IonBackButton,
 } from '@ionic/vue';
 import IconBtn from '@/components/base/IconBtn.vue';
 import WordItem from '@/components/WordItem.vue';
 import FolderItem from '@/components/FolderItem.vue';
 
 // Icons
-import { add, addCircle, chevronDownCircleOutline, search } from 'ionicons/icons';
-
-// Constants
-const ROOT_FOLDER = '61622651-a8d7-43e7-b9fe-b0dfb10fb527';
+import { add, addCircle, createOutline } from 'ionicons/icons';
 
 export default  defineComponent({
-  name: 'WordList',
+  name: 'FolderView',
   components: { 
     IonHeader,
     IonToolbar,
     IonTitle,
     IonIcon,
     IonSpinner,
-    IonGrid,
-    IonRow,
-    IonCol,
     IonContent,
     IonPage,
     IonList,
-    IonRefresher,
-    IonRefresherContent,
+    IonProgressBar,
+    IonButtons,
+    IonBackButton,
     IconBtn,
     WordItem,
     FolderItem,
@@ -122,14 +100,13 @@ export default  defineComponent({
       icons: {
         add,
         addCircle,
-        chevronDownCircleOutline,
-        search,
+        createOutline,
       },
 
-      isRefreshing: false,
       isLoading: true,
+      folderId: '',
 
-      folderId: ROOT_FOLDER,
+      hasFetchedFolder: {} as Record<string, boolean>,
     }
   },
   computed: {
@@ -149,24 +126,21 @@ export default  defineComponent({
         return [];
       }
       return this.$store.getters.getWordsByIds(folder.words);
+    },
+    name(): string {
+        return this.folder ? this.folder.name : 'Unknown';
     }
   },
   methods: {
-    refresh(event: CustomEvent) {
-      this.isRefreshing = true;
-
-      this.refreshData()
-        .finally(() => {
-          (event.target as unknown as {complete: Function}).complete();
-          this.isRefreshing = false;
-        })
-    },
     refreshData() {
       return this.$store.dispatch(ACTIONS.FOLDER_GET, this.folderId);
     },
     openFolder(id: string) {
-      const path = URLS.tabs.concat(URLS.folders, '/', id);
-      this.$router.push(path);
+      this.$router.push(URLS.tabs.concat(URLS.folders, '/', id));
+    },
+    editCurrentFolder() {
+      const parentId = this.folder ? this.folder.parent : undefined;
+      this.$router.push(PATHS.folderUpsert(this.folderId, parentId))
     },
     goToFolderUpsert(id?: string) {
       this.$router.push(PATHS.folderUpsert(id, this.folderId))
@@ -174,28 +148,35 @@ export default  defineComponent({
     goToWordUpsert(id?: string) {
       this.$router.push(PATHS.wordUpsert(id, this.folderId));
     },
-    goToWordSearch() {
-      this.$router.push(URLS.tabs.concat(URLS.words, URLS.wordsSearch))
+    reload() {
+        this.folderId = this.$route.params.id as string;
+
+        if(this.hasFetchedFolder[this.folderId]) {
+           return; 
+        }
+
+        this.isLoading = true;
+        this.refreshData()
+            .then(() => {
+                this.hasFetchedFolder[this.folderId] = true;
+            })
+            .finally(() => {
+                this.isLoading = false;
+            });
     }
   },
   mounted() {
-    console.log("Mounted! :D");
-    this.isLoading = true;
-    this.refreshData()
-      .finally(() => {
-        this.isLoading = false;
-      });
+    this.reload();
+  },
+  watch: {
+    '$route.params.id': function (id) {
+        if(id) {
+            this.reload();
+        }
+    }
   }
 });
 </script>
 
 <style scoped>
-.ripple-parent {
-    position: relative;
-    overflow: hidden;
-}
-
-.spinner {
-  transform: scale(1.6);
-}
 </style>
