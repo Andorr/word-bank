@@ -1,7 +1,12 @@
-use mongodb::bson::{self, DateTime, Document, doc};
-use serde::{Serialize, Deserialize};
+use crate::{
+    models::{
+        FolderQueryOptions, FolderUpdateOptions, WordQueryOptions, WordType, WordUpdateOptions,
+    },
+    Folder, PaginationOptions, Translation, Word,
+};
 use mongodb::bson::serde_helpers::uuid_as_binary;
-use crate::{PaginationOptions, Translation, Word, models::{WordQueryOptions, WordType, WordUpdateOptions, FolderUpdateOptions, FolderQueryOptions}, Folder};
+use mongodb::bson::{self, doc, DateTime, Document};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordDBM {
@@ -10,7 +15,7 @@ pub struct WordDBM {
     pub value: String,
     pub created_at: DateTime,
     pub updated_at: DateTime,
-    pub kind: WordType, 
+    pub kind: WordType,
     pub tags: Vec<String>,
     pub translations: Vec<TranslationDBM>,
 }
@@ -42,7 +47,7 @@ pub struct TranslationDBM {
 
 impl From<WordDBM> for Word {
     fn from(wdbm: WordDBM) -> Self {
-        Word { 
+        Word {
             id: wdbm._id,
             value: wdbm.value,
             kind: wdbm.kind,
@@ -50,7 +55,6 @@ impl From<WordDBM> for Word {
             translations: wdbm.translations.iter().map(|t| t.into()).collect(),
             created_at: wdbm.created_at.into(),
             updated_at: wdbm.updated_at.into(),
-
         }
     }
 }
@@ -69,34 +73,36 @@ impl From<&mut Word> for WordDBM {
     }
 }
 
-
 impl From<&Translation> for TranslationDBM {
     fn from(translation: &Translation) -> Self {
-        TranslationDBM { 
+        TranslationDBM {
             _id: translation.id,
             value: translation.value.clone(),
         }
     }
 }
 
-impl From<& TranslationDBM> for Translation {
-    fn from(translation: & TranslationDBM) -> Self {
-        Translation { 
+impl From<&TranslationDBM> for Translation {
+    fn from(translation: &TranslationDBM) -> Self {
+        Translation {
             id: translation._id,
             value: translation.value.clone(),
         }
     }
 }
 
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde_with::serde_as]
+#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
 pub struct FolderDBM {
     #[serde(with = "uuid_as_binary")]
     pub _id: uuid::Uuid,
     pub name: String,
-    
-    pub parent: Option<bson::Uuid>, // Using bson::Uuid here, due to serialization difficulties with Option<T>.
-    pub words: Vec<uuid::Uuid>, 
+
+    #[serde_as(as = "Option<bson::Uuid>")]
+    pub parent: Option<uuid::Uuid>, // Using bson::Uuid here, due to serialization difficulties with Option<T>.
+
+    #[serde_as(as = "Vec<bson::Uuid>")]
+    pub words: Vec<uuid::Uuid>,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }
@@ -107,11 +113,12 @@ impl FolderDBM {
             self.name = name;
         }
         if let Some(parent) = update.parent.clone() {
-            if let Some(uuid) = parent {
+            self.parent = parent.clone();
+            /* if let Some(uuid) = parent {
                 self.parent = Some(bson::Uuid::from_bytes(*uuid.as_bytes()));
             } else {
                 self.parent = None
-            }
+            } */
         }
         if let Some(words_to_add) = update.add.clone() {
             self.words.extend(words_to_add);
@@ -119,7 +126,10 @@ impl FolderDBM {
             self.words.dedup();
         }
         if let Some(words_to_remove) = update.remove.clone() {
-            self.words = self.words.clone().into_iter()
+            self.words = self
+                .words
+                .clone()
+                .into_iter()
                 .filter(|w_id| !words_to_remove.contains(w_id))
                 .collect();
         }
@@ -130,10 +140,15 @@ impl FolderDBM {
 
 impl From<FolderDBM> for Folder {
     fn from(folder: FolderDBM) -> Self {
-        Folder { 
+        Folder {
             id: folder._id,
             name: folder.name.clone(),
-            parent: if let Some(p) = folder.parent { Some(uuid::Uuid::from_bytes(p.bytes())) } else { None },
+            parent: if let Some(p) = folder.parent {
+                // Some(uuid::Uuid::from_bytes(p.bytes()))
+                Some(p)
+            } else {
+                None
+            },
             words: folder.words.clone(),
             created_at: folder.created_at.into(),
             updated_at: folder.updated_at.into(),
@@ -146,7 +161,12 @@ impl From<&mut Folder> for FolderDBM {
         FolderDBM {
             _id: folder.id,
             name: folder.name.clone(),
-            parent: if let Some(p) = folder.parent { Some(bson::Uuid::from_bytes(*p.as_bytes()))} else { None },
+            parent: if let Some(p) = folder.parent {
+                // Some(bson::Uuid::from_bytes(*p.as_bytes()))
+                Some(p)
+            } else {
+                None
+            },
             words: folder.words.clone(),
             created_at: folder.created_at.into(),
             updated_at: folder.updated_at.into(),
@@ -154,11 +174,10 @@ impl From<&mut Folder> for FolderDBM {
     }
 }
 
-
 impl WordQueryOptions {
     pub fn as_query_doc(self) -> Document {
         let mut document = Document::new();
-        
+
         if let Some(query) = self.query {
             document.insert("$or", vec![
                 doc!{"value": bson::Regex { pattern: query.clone(), options: "i".to_string()}},
@@ -174,13 +193,12 @@ impl WordQueryOptions {
         if let Some(tags) = self.tags {
             document.insert("tags", tags);
         }
-    
 
         document
     }
 
     pub fn as_match_doc(self) -> Document {
-        doc!{
+        doc! {
             "$match": self.as_query_doc(),
         }
     }
@@ -189,7 +207,7 @@ impl WordQueryOptions {
 impl From<WordQueryOptions> for Document {
     fn from(options: WordQueryOptions) -> Self {
         let mut document = Document::new();
-        
+
         if let Some(word) = options.word {
             document.insert("value", word);
         }
@@ -207,34 +225,42 @@ impl From<WordQueryOptions> for Document {
 impl FolderQueryOptions {
     pub fn as_query_doc(self) -> Document {
         let mut document = Document::new();
-        
+
         if let Some(query) = self.query {
-            document.insert("name",
-                bson::Regex { pattern: query.clone(), options: "i".to_string()}
+            document.insert(
+                "name",
+                bson::Regex {
+                    pattern: query.clone(),
+                    options: "i".to_string(),
+                },
             );
         }
         if let Some(parent) = self.parent {
-            document.insert("parent", bson::Uuid::parse_str(parent.to_string()).unwrap());
+            document.insert(
+                "parent", parent, /* bson::Uuid::parse_str(parent.to_string()).unwrap() */
+            );
         }
 
         if let Some(words) = self.words {
-            document.insert("words", doc!{
-                "$in": words.iter().map(|w| w.to_string()).collect::<Vec<String>>(),
-            });
+            document.insert(
+                "words",
+                doc! {
+                    "$in": words/* .iter().map(|w| w.to_string()).collect::<Vec<String>>() */,
+                },
+            );
         }
 
         document
     }
 
     pub fn as_match_doc(self) -> Document {
-        doc!{
+        doc! {
             "$match": self.as_query_doc(),
         }
     }
 }
 
 impl PaginationOptions {
-
     pub fn as_limit_doc(self) -> Document {
         doc! {
             "$limit": self.limit.clone() as u32,
@@ -248,10 +274,9 @@ impl PaginationOptions {
 }
 
 impl WordUpdateOptions {
-
     pub fn as_set_doc(&self, time: DateTime) -> Document {
         let mut doc = Document::new();
-        
+
         if let Some(word) = self.word.clone() {
             doc.insert("value", word);
         }

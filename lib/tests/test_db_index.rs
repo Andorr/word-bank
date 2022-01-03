@@ -4,7 +4,6 @@ extern crate dotenv;
 
 #[test]
 fn initailize_db() {
-
     dotenv::dotenv().ok();
 
     let options = load_options_from_env().unwrap();

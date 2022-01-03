@@ -58,6 +58,14 @@ export const actions: ActionTree<State, any> = {
     [ACTIONS.WORD_DELETE](store, id: string): Promise<void> {
         return WordBank.deleteWord(id).then(() => {
             store.commit(MUTATIONS.WORD_DELETE, { id: id });
+
+            // Delete word from corresponding folders
+            Object.entries(store.state.folders).filter(([, folder]) =>
+                folder.words.includes(id)
+            ).forEach(([, folder]) => {
+                const index = folder.words.indexOf(id);
+                folder.words.splice(index, 1);
+            })
         })
     },
 

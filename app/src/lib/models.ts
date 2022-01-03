@@ -51,15 +51,18 @@ export class Folder {
     parent?: string;
     words: string[];
 
-    constructor(id: string, name: string, words: string[], parent?: string) {
+    createdAt: string;
+
+    constructor(id: string, name: string, words: string[], parent?: string, createdAt?: string) {
         this.id = id;
         this.name = name;
         this.parent = parent;
         this.words = words;
+        this.createdAt = createdAt || new Date().toISOString();
     }
 
     static fromObject(object: Record<string, any>) {
-        return new Folder(object.id, object.name, object.words, object.parent);
+        return new Folder(object.id, object.name, object.words, object.parent, object.createdAt);
     }
 
     update(f: Folder) {
