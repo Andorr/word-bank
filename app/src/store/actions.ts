@@ -79,7 +79,7 @@ export const actions: ActionTree<State, any> = {
         });
     },
     [ACTIONS.FOLDER_UPDATE](store, folder: Folder): Promise<Folder> {
-        return WordBank.updateFolder(folder).then((_: Folder) => {
+        return WordBank.updateFolder(folder).then(() => {
             const f = store.getters.getFolderById(folder.id);
             if(f) {
                 f.update(folder);

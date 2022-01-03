@@ -4,6 +4,7 @@ use uuid::Uuid;
 pub use crate::models::{Word, Translation, Folder};
 use crate::{models::{PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions, FolderUpdateOptions, FolderQueryOptions, FolderContent}, mongo::{MongoDBClient, DBOptions, MongoContext}};
 
+const PAGINATION_LIMIT: usize = 10000; 
 
 pub type Context = MongoContext;
 // pub type Context = Box<dyn WordBankContext>;
@@ -71,7 +72,7 @@ impl WordBankClient {
                 words: Some(vec![word_id.clone()]),
                 parent: None,
             }, 
-            PaginationOptions::new(100, 1)
+            PaginationOptions::new(PAGINATION_LIMIT, 1)
         ) {
             Ok(folder_result) => folder_result,
             Err(_) => return Err(())
@@ -118,10 +119,21 @@ impl WordBankClient {
             Err(_) => return Err(())
         };
         
+        // Check if folder is empty
         if folder.words.len() > 0 {
             return Err(())
         }
-
+        let children = match self.db.query_folders(ctx, FolderQueryOptions {
+            query: None,
+            words: None,
+            parent: Some(folder.id),
+        }, PaginationOptions::new(PAGINATION_LIMIT, 1)) {
+            Ok(result) => result,
+            Err(_) => return Err(()),
+        };
+        if children.results.len() > 0 {
+            return Err(())
+        }
 
         self.db.delete_folder(ctx, folder.id)
     }
@@ -137,8 +149,8 @@ impl WordBankClient {
                 query: None,
                 words: None,
                 parent: Some(folder.id.clone()),
-            }, PaginationOptions::new(100, 1)) {
-            Ok(fs) => fs,
+            }, PaginationOptions::new(PAGINATION_LIMIT, 1)) {
+            Ok(pr) => pr,
             Err(_) => return Err(())
         };
 

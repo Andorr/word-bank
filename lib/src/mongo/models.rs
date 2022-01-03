@@ -160,7 +160,6 @@ impl WordQueryOptions {
         let mut document = Document::new();
         
         if let Some(query) = self.query {
-            // document.insert("value", bson::Regex { pattern: query.clone(), options: "i".to_string()});
             document.insert("$or", vec![
                 doc!{"value": bson::Regex { pattern: query.clone(), options: "i".to_string()}},
                 doc!{"translations.value": bson::Regex { pattern: query, options: "i".to_string() }},
