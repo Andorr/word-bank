@@ -75,7 +75,7 @@ export default defineComponent({
       voidSvg: VoidSvg,
 
       query: "",
-      result: null as PageResult | null,
+      result: null as PageResult<Word> | null,
       isLoading: false,
     };
   },
@@ -94,7 +94,7 @@ export default defineComponent({
           },
           listOptions: LIST_OPTIONS.NONE,
         })
-        .then((result: PageResult) => {
+        .then((result: PageResult<Word>) => {
           this.result = result;
         })
         .finally(() => {

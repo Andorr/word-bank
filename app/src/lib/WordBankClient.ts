@@ -1,11 +1,11 @@
-import { Folder, FolderResult, PageResult, PaginationOptions, Word, WordQueryOptions } from "./models";
+import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, Word, WordQueryOptions } from "./models";
 
 export default class WordBank {
 
     static token: string = process.env.VUE_APP_WORDBANK_API_TOKEN;
     static baseURL: string = process.env.VUE_APP_WORDBANK_API_URL // "https://wordbank-api.herokuapp.com/";
 
-    static queryWords(query: WordQueryOptions = {}, pagination: PaginationOptions = {}): Promise<PageResult> {
+    static queryWords(query: WordQueryOptions = {}, pagination: PaginationOptions = {}): Promise<PageResult<Word>> {
         return this.doRequest(
             "GET",
             "api/v1/words",
@@ -17,7 +17,7 @@ export default class WordBank {
         .then((res) => {
             return res.json();
         })
-        .then((result: PageResult) => {
+        .then((result: PageResult<Word>) => {
             result.results = result.results.map(wObj => Word.fromObject(wObj));
             return result;
         });
@@ -66,6 +66,24 @@ export default class WordBank {
         ).then(() => id)
     }
 
+    static queryFolders(query: FolderQueryOptions = {}, pagination: PaginationOptions = {}): Promise<PageResult<Folder>> {
+        return this.doRequest(
+            "GET",
+            "api/v1/folders",
+            {
+                ...query,
+                ...pagination,
+            }
+        )
+        .then((res) => {
+            return res.json();
+        })
+        .then((result: PageResult<Folder>) => {
+            result.results = result.results.map(fObj => Folder.fromObject(fObj));
+            return result;
+        });
+    }
+
     static getFolder(id: string): Promise<FolderResult> {
         return this.doRequest(
             "GET",
@@ -106,6 +124,18 @@ export default class WordBank {
             folder.toObject(),
         ).then(() => {
             return folder;
+        });
+    }
+
+    static startQuiz(options: QuizOptions): Promise<Quiz> {
+        return this.doRequest(
+            "POST",
+            "api/v1/quiz",
+            undefined,
+            options,
+        ).then(res => res.json())
+        .then((q: Quiz) => {
+            return q;
         });
     }
 

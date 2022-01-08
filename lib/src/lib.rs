@@ -1,18 +1,12 @@
 mod client;
 mod models;
-pub mod utils;
 pub mod mongo;
+pub mod utils;
 
 pub use self::client::{WordBankClient, DB};
 pub use self::models::{
-    Word,
-    Translation,
-    WordType,
-    Folder,
-    FolderContent,
-    FolderUpdateOptions,
-    WordQueryOptions,
-    WordUpdateOptions,
-    PaginationOptions,
-    PageResult,
+    Folder, FolderContent, FolderQueryOptions, FolderUpdateOptions, PageResult, PaginationOptions,
+    Translation, Word, WordQueryOptions, WordType, WordUpdateOptions,
 };
+
+pub use self::models::quiz;

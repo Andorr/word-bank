@@ -98,11 +98,11 @@ export type FolderResult = {
     };
 }
 
-export type PageResult = { 
+export type PageResult<T> = { 
     total: number;
     page: number;
     count: number;
-    results: Word[];
+    results: T[];
 }
 
 export type WordQueryOptions = {
@@ -112,7 +112,44 @@ export type WordQueryOptions = {
     tags?: string[];
 }
 
+export type FolderQueryOptions = {
+    query?: string;
+    words?: string[];
+    parent?: string;
+}
+
 export type PaginationOptions = {
     limit?: number;
     page?: number;
+}
+
+export enum QuizType {
+    Normal = "Normal",
+    Endless = "Endless",
+}
+
+export type QuizWordOption = {
+    folderId?: string;
+    count?: number;
+}
+
+export type QuizOptions = {
+    kind: QuizType;
+    words: QuizWordOption;
+}
+
+export type Quiz = {
+    words: Word[];
+    options: QuizOptions;
+}
+
+export type QuizResult = {
+    timestamp: string;
+    words: QuizWord[];
+}
+
+export type QuizWord = {
+    wordId: string;
+    numSuccess: number;
+    numMistakes: number;
 }

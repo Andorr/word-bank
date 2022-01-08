@@ -4,49 +4,17 @@ use uuid::Uuid;
 pub use crate::models::{Folder, Translation, Word};
 use crate::{
     models::{
-        FolderContent, FolderQueryOptions, FolderUpdateOptions, PageResult, PaginationOptions,
-        WordQueryOptions, WordUpdateOptions,
+        quiz::Quiz, quiz::QuizOptions, FolderContent, FolderQueryOptions, FolderUpdateOptions,
+        PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions,
     },
     mongo::{DBOptions, MongoContext, MongoDBClient},
+    DB,
 };
 
 const PAGINATION_LIMIT: usize = 10000;
 
 pub type Context = MongoContext;
 // pub type Context = Box<dyn WordBankContext>;
-
-pub trait DB {
-    fn new_context(&self) -> Result<Context, ()>;
-    fn insert_word(&self, ctx: &mut Context, word: &mut Word) -> Result<Uuid, ()>;
-    fn insert_translation(
-        &self,
-        word_id: String,
-        translation: &mut Translation,
-    ) -> Result<Uuid, ()>;
-    fn query_words(
-        &self,
-        query_options: WordQueryOptions,
-        pagination: PaginationOptions,
-    ) -> Result<PageResult<Word>, ()>;
-    fn delete_word(&self, ctx: &mut Context, word_id: Uuid) -> Result<(), ()>;
-    fn update_word(&self, update_options: &WordUpdateOptions) -> Result<(), ()>;
-    fn get_words(&self, ids: Vec<Uuid>) -> Result<Vec<Word>, ()>;
-
-    fn insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()>;
-    fn delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()>;
-    fn update_folder(
-        &self,
-        ctx: &mut Context,
-        update_options: &FolderUpdateOptions,
-    ) -> Result<(), ()>;
-    fn query_folders(
-        &self,
-        ctx: &mut Context,
-        query_options: FolderQueryOptions,
-        pagination: PaginationOptions,
-    ) -> Result<PageResult<Folder>, ()>;
-    fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()>;
-}
 
 #[derive(Clone)]
 pub struct WordBankClient {
@@ -137,6 +105,15 @@ impl WordBankClient {
         self.db.insert_folder(ctx, folder)
     }
 
+    pub fn query_folders(
+        &self,
+        ctx: &mut Context,
+        filter: FolderQueryOptions,
+        pagination: PaginationOptions,
+    ) -> Result<PageResult<Folder>, ()> {
+        self.db.query_folders(ctx, filter, pagination)
+    }
+
     pub fn update_folder(
         &self,
         ctx: &mut Context,
@@ -205,5 +182,31 @@ impl WordBankClient {
             words: words,
             folders: folders.results,
         })
+    }
+
+    pub fn initialize_quiz(&self, ctx: &mut Context, options: QuizOptions) -> Result<Quiz, ()> {
+        let words = match options.words.folder_id {
+            Some(f_id) => {
+                let folder = match self.get_folder(ctx, f_id) {
+                    Ok(f) => f,
+                    Err(_) => return Err(()),
+                };
+
+                let content = match self.get_folder_content(ctx, &folder) {
+                    Ok(f) => f,
+                    Err(_) => return Err(()),
+                };
+                content.words
+            }
+            None => {
+                if let Ok(w) = self.db.random_words(ctx, options.words.count.unwrap_or(16)) {
+                    w
+                } else {
+                    return Err(());
+                }
+            }
+        };
+
+        Ok(Quiz { words, options })
     }
 }

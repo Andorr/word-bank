@@ -1,14 +1,38 @@
 use std::fmt::Debug;
 
-use lib::{Folder, FolderContent, FolderUpdateOptions};
+use lib::{Folder, FolderContent, FolderQueryOptions, FolderUpdateOptions};
 use serde::{Deserialize, Serialize};
 use tide::{Body, Request, Response};
 use uuid::Uuid;
 
 use crate::{
     error::{build_error_res, err_server_error},
+    models::PaginationOptionalOptions,
     state::State,
 };
+
+pub async fn folders_list(req: Request<State>) -> tide::Result {
+    let state = req.state();
+    let client = &state.client;
+
+    let folder_query_options = req.query::<FolderQueryOptions>()?;
+    let pagination_options = req.query::<PaginationOptionalOptions>()?;
+
+    let mut ctx = client.new_context().unwrap();
+    let res = match client.query_folders(
+        &mut ctx,
+        folder_query_options,
+        pagination_options.to_pagination_options(),
+    ) {
+        Ok(result) => Response::builder(200)
+            .body(Body::from_json(&result)?)
+            .build(),
+        Err(_) => err_server_error(),
+    };
+    let _ = ctx.commit();
+
+    Ok(res)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct FolderResult {

@@ -1,4 +1,4 @@
-import { Folder, FolderResult, PageResult, PaginationOptions, Word, WordQueryOptions } from "@/lib/models";
+import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, Word, WordQueryOptions } from "@/lib/models";
 import WordBank from "@/lib/WordBankClient";
 import { ActionTree } from "vuex";
 import { State } from '.';
@@ -10,10 +10,13 @@ export const enum ACTIONS {
     WORD_UPDATE = 'WORD_UPDATE',
     WORD_DELETE = 'WORD_DELETE',
 
+    FOLDER_QUERY = 'FOLDER_QUERY',
     FOLDER_GET = 'FOLDER_GET',
     FOLDER_INSERT = 'FOLDER_INSERT',
     FOLDER_UPDATE = 'FOLDER_UPDATE',
     FOLDER_DELETE = 'FOLDER_DELETE',
+
+    QUIZ_START = 'QUIZ_START',
 }
 
 export const actions: ActionTree<State, any> = {
@@ -46,8 +49,8 @@ export const actions: ActionTree<State, any> = {
                 return w;
             })
     },
-    [ACTIONS.WORD_QUERY](store, options: ActionQueryOptions = {listOptions: LIST_OPTIONS.LAST}): Promise<PageResult> {
-        return WordBank.queryWords(options.queryOptions, options.pagination).then((pageResult: PageResult) => {
+    [ACTIONS.WORD_QUERY](store, options: ActionQueryOptions = {listOptions: LIST_OPTIONS.LAST}): Promise<PageResult<Word>> {
+        return WordBank.queryWords(options.queryOptions, options.pagination).then((pageResult: PageResult<Word>) => {
                 store.commit(MUTATIONS.WORDS_SET, {
                     words: pageResult.results,
                     listOptions: options.listOptions
@@ -70,6 +73,13 @@ export const actions: ActionTree<State, any> = {
     },
 
 
+    [ACTIONS.FOLDER_QUERY](store, options: ActionFolderQueryOptions): Promise<PageResult<Folder>> {
+        return WordBank.queryFolders(options.queryOptions, options.pagination)
+        .then((pageResult: PageResult<Folder>) => {
+            store.commit(MUTATIONS.FOLDERS_SET, pageResult.results);
+            return pageResult;
+        });
+    },
     [ACTIONS.FOLDER_GET](store, id: string): Promise<FolderResult> {
         return WordBank.getFolder(id).then((result) => {
             store.commit(MUTATIONS.WORDS_SET, { 
@@ -102,10 +112,19 @@ export const actions: ActionTree<State, any> = {
             store.commit(MUTATIONS.FOLDER_DELETE, { id: id });
         })
     },
+
+    [ACTIONS.QUIZ_START](store, options: QuizOptions): Promise<Quiz> {
+        return WordBank.startQuiz(options);
+    }
 }
 
-type ActionQueryOptions = {
+export type ActionQueryOptions = {
     queryOptions?: WordQueryOptions; 
     pagination?: PaginationOptions; 
     listOptions: LIST_OPTIONS;
+}
+
+export type ActionFolderQueryOptions = {
+    queryOptions?: FolderQueryOptions;
+    pagination?: PaginationOptions;
 }

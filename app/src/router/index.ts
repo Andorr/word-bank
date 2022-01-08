@@ -41,8 +41,12 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/FolderView/FolderView.vue')
       },
       {
-        path: 'tab2',
-        component: () => import('@/views/Tab2.vue')
+        path: URLS.tabs.concat(URLS.landing),
+        component: () => import('@/views/Landing/Landing.vue')
+      },
+      {
+        path: URLS.quiz,
+        component: () => import('@/views/QuizLanding/QuizLanding.vue')
       },
       {
         path: 'tab3',

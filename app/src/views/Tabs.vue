@@ -7,12 +7,12 @@
           <ion-icon :icon="triangle" />
           <ion-label>Words</ion-label>
         </ion-tab-button>
-          
-        <ion-tab-button tab="tab2" href="/tabs/tab2">
+
+        <ion-tab-button tab="tab2" href="/tabs/landing">
           <ion-icon :icon="ellipse" />
           <ion-label>Tab 2</ion-label>
         </ion-tab-button>
-        
+
         <ion-tab-button tab="tab3" href="/tabs/tab3">
           <ion-icon :icon="square" />
           <ion-label>Tab 3</ion-label>
@@ -23,18 +23,34 @@
 </template>
 
 <script lang="ts">
-import { IonTabBar, IonTabButton, IonTabs, IonLabel, IonIcon, IonPage, IonRouterOutlet } from '@ionic/vue';
-import { ellipse, square, triangle } from 'ionicons/icons';
+import {
+  IonTabBar,
+  IonTabButton,
+  IonTabs,
+  IonLabel,
+  IonIcon,
+  IonPage,
+  IonRouterOutlet,
+} from "@ionic/vue";
+import { ellipse, square, triangle } from "ionicons/icons";
 
 export default {
-  name: 'Tabs',
-  components: { IonLabel, IonTabs, IonTabBar, IonTabButton, IonIcon, IonPage, IonRouterOutlet },
+  name: "Tabs",
+  components: {
+    IonLabel,
+    IonTabs,
+    IonTabBar,
+    IonTabButton,
+    IonIcon,
+    IonPage,
+    IonRouterOutlet,
+  },
   setup() {
     return {
-      ellipse, 
-      square, 
+      ellipse,
+      square,
       triangle,
-    }
-  }
-}
+    };
+  },
+};
 </script>

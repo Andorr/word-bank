@@ -1,12 +1,16 @@
 const URLS = {
     tabs: '/tabs',
 
+    landing: '/landing',
+
     words: '/words',
     wordsUpsert: '/upsert',
     wordsSearch: '/search',
 
     folders: '/folders',
     foldersUpsert: '/upsert',
+
+    quiz: '/quiz',
 }
 export default URLS;
 
@@ -26,7 +30,17 @@ const folderUpsert = (id?: string, parentId?: string) => {
     return path + '?' + query;
 }
 
+const quizLanding = (): string => {
+    return URLS.quiz;
+}
+
+const quiz = (id: string): string => {
+    return URLS.quiz.concat('/', id);
+}
+
 export const PATHS = {
     wordUpsert,
     folderUpsert,
+    quizLanding,
+    quiz,
 }
