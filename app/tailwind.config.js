@@ -17,7 +17,10 @@ module.exports = {
         determiner: '#8b83f0',
         preposition: '#ffe387',
         other: '#545454',
-      }
+      },
+      height: {
+        'fit': 'fit-content',
+      },
     },
   },
   variants: {

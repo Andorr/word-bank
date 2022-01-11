@@ -1,4 +1,4 @@
-import { Folder, Word } from '@/lib/models';
+import { Folder, Quiz, Word } from '@/lib/models';
 import { GetterTree } from 'vuex'
 import { State } from '.'
 
@@ -12,6 +12,7 @@ export const getters: GetterTree<State, any> = {
     getWordsByIds: (state) => (ids: string[]): Word[] => {
         return Object.keys(state.words).filter(id => ids.includes(id)).map(id => state.words[id]);
     },
+    
     getFolderById: (state) => (id: string): Folder | null => {
         return state.folders[id] || null
     },
@@ -21,5 +22,9 @@ export const getters: GetterTree<State, any> = {
     getFoldersByParent: (state) => (parentId: string): Folder[] => {
         return Object.values(state.folders).filter((folder) => folder.parent === parentId)
             .map((folder) => folder);
-    }
+    },
+
+    getQuizById: (state) => (quizId: string): Quiz | null => {
+        return state.quizzes[quizId] || null;
+    },
 }

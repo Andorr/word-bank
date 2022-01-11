@@ -3,8 +3,7 @@ import { RouteRecordRaw } from 'vue-router';
 import URLS from '@/URLS';
 
 // Views
-import Tabs from '../views/Tabs.vue'
-
+import Tabs from '../views/Tabs.vue';
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -45,15 +44,19 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('@/views/Landing/Landing.vue')
       },
       {
-        path: URLS.quiz,
-        component: () => import('@/views/QuizLanding/QuizLanding.vue')
-      },
-      {
         path: 'tab3',
         component: () => import('@/views/Tab3.vue')
       }
     ]
-  }
+  },
+  {
+    path: URLS.quiz,
+    component: () => import('@/views/QuizLanding/QuizLanding.vue')
+  },
+  {
+    path: URLS.quiz.concat('/:id'),
+    component: () => import('@/views/QuizView/QuizView.vue')
+  },
 ]
 
 const router = createRouter({

@@ -123,9 +123,15 @@ export type PaginationOptions = {
     page?: number;
 }
 
-export enum QuizType {
+export enum QuizMode {
     Normal = "Normal",
     Endless = "Endless",
+}
+
+export enum QuizQuestionPolicy {
+    WordToTranslations,
+    TranslationsToWord,
+    Random,
 }
 
 export type QuizWordOption = {
@@ -134,11 +140,13 @@ export type QuizWordOption = {
 }
 
 export type QuizOptions = {
-    kind: QuizType;
+    mode: QuizMode;
+    policy?: QuizQuestionPolicy;
     words: QuizWordOption;
 }
 
 export type Quiz = {
+    id: string;
     words: Word[];
     options: QuizOptions;
 }

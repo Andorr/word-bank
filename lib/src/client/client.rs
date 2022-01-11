@@ -207,6 +207,10 @@ impl WordBankClient {
             }
         };
 
-        Ok(Quiz { words, options })
+        Ok(Quiz {
+            id: Uuid::new_v4(),
+            words,
+            options,
+        })
     }
 }

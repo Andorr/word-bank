@@ -38,9 +38,14 @@ const quiz = (id: string): string => {
     return URLS.quiz.concat('/', id);
 }
 
+const home = (): string => {
+    return URLS.tabs.concat(URLS.landing);
+}
+
 export const PATHS = {
     wordUpsert,
     folderUpsert,
     quizLanding,
     quiz,
+    home,
 }

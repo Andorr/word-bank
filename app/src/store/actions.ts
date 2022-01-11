@@ -88,7 +88,7 @@ export const actions: ActionTree<State, any> = {
             });
             store.commit(MUTATIONS.FOLDERS_SET, [result.data, ...(result.content.folders || [])])
             return result;
-        });
+        })
     },
     [ACTIONS.FOLDER_INSERT](store, folder: Folder): Promise<Folder> {
         return WordBank.insertFolder(folder).then((f: Folder) => {
@@ -114,7 +114,11 @@ export const actions: ActionTree<State, any> = {
     },
 
     [ACTIONS.QUIZ_START](store, options: QuizOptions): Promise<Quiz> {
-        return WordBank.startQuiz(options);
+        return WordBank.startQuiz(options).then((q: Quiz) => {
+            q.options.policy = options.policy;
+            store.commit(MUTATIONS.QUIZ_SET, q);
+            return q;
+        })
     }
 }
 

@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::Word;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum QuizType {
+pub enum QuizMode {
     Normal,
     Endless,
 }
@@ -19,12 +19,13 @@ pub struct QuizWordOption {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QuizOptions {
-    pub kind: QuizType,
+    pub mode: QuizMode,
     pub words: QuizWordOption,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Quiz {
+    pub id: Uuid,
     pub words: Vec<Word>,
     pub options: QuizOptions,
 }

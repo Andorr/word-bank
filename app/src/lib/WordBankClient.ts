@@ -1,3 +1,4 @@
+import { FetchError } from "./errors";
 import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, Word, WordQueryOptions } from "./models";
 
 export default class WordBank {
@@ -160,9 +161,9 @@ export default class WordBank {
 
         return fetch(this.baseURL.concat(path, '?', queryString), options)
             .then((res) => {
-                /* if(res.status >= 400) {
-                    throw 
-                } */
+                if(res.status >= 400) {
+                    throw new FetchError(res);
+                }
                 return res;
             })
     }

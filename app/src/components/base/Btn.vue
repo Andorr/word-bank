@@ -1,6 +1,15 @@
 <template>
   <button
-    class="base-btn ion-activatable px-4 py-2 rounded overflow-hidden relative"
+    class="
+      base-btn
+      bg-primary
+      ion-activatable
+      px-4
+      py-2
+      rounded
+      overflow-hidden
+      relative
+    "
     :class="{ disabled: disabled }"
     v-bind="$attrs"
     :disabled="disabled"
@@ -32,7 +41,7 @@ export default defineComponent({
 
 <style scoped>
 .base-btn {
-  background-color: var(--ion-color-primary);
+  /* background-color: var(--ion-color-primary); */
 }
 
 .disabled {

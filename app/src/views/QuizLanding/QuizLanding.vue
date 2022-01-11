@@ -3,10 +3,10 @@
     <ion-list class="flex flex-col h-full">
       <ion-list-header class="mb-2">Quiz Options:</ion-list-header>
       <ion-item>
-        <ion-label>Quiz Type</ion-label>
-        <ion-select v-model="quizType" interface="action-sheet">
+        <ion-label>Quiz Mode</ion-label>
+        <ion-select v-model="quizMode" interface="action-sheet">
           <ion-select-option
-            v-for="qt in quizTypes"
+            v-for="qt in quizModes"
             :key="qt.value"
             :value="qt.value"
           >
@@ -16,7 +16,20 @@
       </ion-item>
 
       <ion-item>
-        <ion-label>Word Option</ion-label>
+        <ion-label>Question Policy</ion-label>
+        <ion-select v-model="quizQuestionPolicy" interface="action-sheet">
+          <ion-select-option
+            v-for="qqp in quizQuestionPolicies"
+            :key="qqp.value"
+            :value="qqp.value"
+          >
+            {{ qqp.label }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Words</ion-label>
         <ion-select v-model="quizWordOption" interface="action-sheet">
           <ion-select-option
             v-for="qopt in quizWordOptions"
@@ -72,9 +85,17 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
+import { PATHS } from "@/URLS";
 
 // Store
-import { Folder, PageResult, Quiz, QuizOptions, QuizType } from "@/lib/models";
+import {
+  Folder,
+  PageResult,
+  Quiz,
+  QuizOptions,
+  QuizMode,
+  QuizQuestionPolicy,
+} from "@/lib/models";
 import { ActionFolderQueryOptions, ACTIONS } from "@/store/actions";
 
 // Components
@@ -134,16 +155,28 @@ export default defineComponent({
       isLoading: false,
       isLoadingFolders: false,
 
-      quizTypes: [
-        { value: QuizType.Normal, label: "Normal" },
-        { value: QuizType.Endless, label: "Endless" },
+      quizModes: [
+        { value: QuizMode.Normal, label: "Normal" },
+        { value: QuizMode.Endless, label: "Endless" },
       ],
-      quizType: QuizType.Normal,
+      quizMode: QuizMode.Normal,
+      quizQuestionPolicies: [
+        { value: QuizQuestionPolicy.Random, label: "Random" },
+        {
+          value: QuizQuestionPolicy.WordToTranslations,
+          label: "Word to translations",
+        },
+        {
+          value: QuizQuestionPolicy.TranslationsToWord,
+          label: "Translation to word",
+        },
+      ],
+      quizQuestionPolicy: QuizQuestionPolicy.Random,
       quizWordOptions: [
         { value: QuizWordOption.Folder, label: "Folder" },
         { value: QuizWordOption.Random, label: "Random" },
       ],
-      quizWordOption: QuizWordOption.Folder,
+      quizWordOption: QuizWordOption.Random,
       wordCount: 20,
 
       folderQuery: "" as string,
@@ -154,7 +187,8 @@ export default defineComponent({
   methods: {
     buildOptions(): QuizOptions {
       return {
-        kind: this.quizType,
+        mode: this.quizMode,
+        policy: this.quizQuestionPolicy,
         words: {
           folderId: this.isQuizWordOptionRandom
             ? undefined
@@ -168,7 +202,7 @@ export default defineComponent({
       this.$store
         .dispatch(ACTIONS.QUIZ_START, this.buildOptions())
         .then((q: Quiz) => {
-          console.log(q);
+          this.$router.push(PATHS.quiz(q.id));
         })
         .finally(() => (this.isLoading = false));
     },

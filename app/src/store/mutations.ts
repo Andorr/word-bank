@@ -1,4 +1,4 @@
-import { Folder, Word } from '@/lib/models';
+import { Folder, Quiz, Word } from '@/lib/models';
 import { MutationTree } from 'vuex';
 import { State } from '.';
 
@@ -10,7 +10,11 @@ export const enum MUTATIONS {
     FOLDER_SET = 'FOLDER_SET',
     FOLDERS_SET = 'FOLDERS_SET',
     FOLDER_DELETE = 'FOLDER_DELETE',
+
+    QUIZ_SET = 'QUIZ_SET',
 }
+
+
 
 export const enum LIST_OPTIONS {
     NONE = 'NONE',
@@ -58,5 +62,9 @@ export const mutations: MutationTree<State> = {
     },
     [MUTATIONS.FOLDER_DELETE](state: State, payload: { id: string }) {
         delete state.folders[payload.id];
+    },
+
+    [MUTATIONS.QUIZ_SET](state: State, payload: Quiz) {
+        state.quizzes[payload.id] = payload;
     }
 }
