@@ -1,8 +1,10 @@
 use uuid::Uuid;
 
 use crate::{
-    models::FolderQueryOptions, Folder, FolderUpdateOptions, PageResult, PaginationOptions,
-    Translation, Word, WordQueryOptions, WordUpdateOptions,
+    models::{stats::UserStatistics, FolderQueryOptions},
+    quiz::QuizResult,
+    Folder, FolderUpdateOptions, PageResult, PaginationOptions, Translation, Word,
+    WordQueryOptions, WordUpdateOptions,
 };
 
 use super::Context;
@@ -39,5 +41,10 @@ pub trait DB {
     ) -> Result<PageResult<Folder>, ()>;
     fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()>;
 
+    // --- QUIZ RELATED ---
     fn random_words(&self, ctx: &mut Context, count: u32) -> Result<Vec<Word>, ()>;
+    fn insert_quiz_result(&self, ctx: &mut Context, results: &mut QuizResult) -> Result<Uuid, ()>;
+
+    // --- STATISTICS RELATED ---
+    fn get_user_statistics(&self, ctx: &mut Context) -> Result<UserStatistics, ()>;
 }

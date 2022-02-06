@@ -152,12 +152,13 @@ export type Quiz = {
 }
 
 export type QuizResult = {
-    timestamp: string;
-    words: QuizWord[];
+    id: string;
+    questions: QuizWord[];
+    createdAt: string;
 }
 
 export type QuizWord = {
     wordId: string;
-    numSuccess: number;
-    numMistakes: number;
+    numCorrects: number;
+    numIncorrects: number;
 }

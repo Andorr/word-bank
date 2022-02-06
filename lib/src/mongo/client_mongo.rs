@@ -1,6 +1,7 @@
 use crate::{
     client::Context,
-    models::{PageResult, PaginationOptions, WordQueryOptions},
+    models::{stats::UserStatistics, PageResult, PaginationOptions, WordQueryOptions},
+    quiz::QuizResult,
     Folder, Translation, Word, WordUpdateOptions, DB,
 };
 use mongodb::{
@@ -15,11 +16,12 @@ use uuid::Uuid;
 
 use super::{
     context::MongoContext,
-    models::{FolderDBM, WordDBM},
+    models::{FolderDBM, QuizResultDBM, WordDBM},
 };
 
 const WORD_COL: &'static str = "words";
 const FOLDER_COL: &'static str = "folders";
+const QUIZ_RESULT_COL: &'static str = "quizresults";
 
 pub struct DBOptions {
     pub uri: String,
@@ -53,6 +55,10 @@ impl MongoDBClient {
 
     pub(crate) fn folder_collection(&self) -> Collection<FolderDBM> {
         self.db.collection::<FolderDBM>(FOLDER_COL)
+    }
+
+    pub(crate) fn quizresult_collection(&self) -> Collection<QuizResultDBM> {
+        self.db.collection::<QuizResultDBM>(QUIZ_RESULT_COL)
     }
 }
 
@@ -157,6 +163,8 @@ impl DB for MongoDBClient {
         self.handle_update_folder(ctx, update_options)
     }
 
+    // ---- QUIZ IMPLEMENTATIONS ----
+
     fn query_folders(
         &self,
         ctx: &mut Context,
@@ -168,6 +176,15 @@ impl DB for MongoDBClient {
 
     fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()> {
         self.handle_get_folder(ctx, folder_id)
+    }
+
+    fn insert_quiz_result(&self, ctx: &mut Context, result: &mut QuizResult) -> Result<Uuid, ()> {
+        self.handle_insert_quiz_result(ctx, result)
+    }
+
+    // ---- STATS IMPLEMENTATIONS ----
+    fn get_user_statistics(&self, ctx: &mut Context) -> Result<UserStatistics, ()> {
+        self.handle_get_user_statistics(ctx)
     }
 }
 

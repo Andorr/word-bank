@@ -1,4 +1,4 @@
-import { QuizMode, QuizOptions, QuizQuestionPolicy, Word } from "@/lib/models";
+import { QuizMode, QuizOptions, QuizQuestionPolicy, QuizResult, QuizWord, Word } from "@/lib/models";
 import { alertController } from "@ionic/vue";
 
 export enum QuizStatus {
@@ -7,13 +7,14 @@ export enum QuizStatus {
     Finished,
 }
 
-export enum QuizResult {
+export enum QuizQuestionResult {
     None = "None",
     Correct = "Correct",
     Incorrect = "Incorrect",
 }
   
 export type Question = {
+    wordId: string;
     question: string;
     answers: string[];
     kind: string;
@@ -79,24 +80,24 @@ export class QuizState {
         return this.questions[this.questionIndex];
     }
 
-    checkAnswer(input: string): QuizResult {
+    checkAnswer(input: string): QuizQuestionResult {
         if(this.questionIndex >= this.questions.length) {
-            return QuizResult.None;
+            return QuizQuestionResult.None;
         }
 
         const numCorrect = this.questions[this.questionIndex].answers.filter(answer => answer.trim().toLowerCase() === input.trim().toLowerCase()).length;
         if(numCorrect > 0) {
           this.questions[this.questionIndex].numCorrects++;
-          return QuizResult.Correct;
+          return QuizQuestionResult.Correct;
         } else {
           this.questions[this.questionIndex].numIncorrects++;
-          return QuizResult.Incorrect;
+          return QuizQuestionResult.Incorrect;
         }
     }
 
-    passQuestion(): QuizResult {
+    passQuestion(): QuizQuestionResult {
         this.questions[this.questionIndex].numIncorrects++;
-        return QuizResult.Incorrect;
+        return QuizQuestionResult.Incorrect;
     }
 
     getStats(): QuizStats {
@@ -116,9 +117,17 @@ export class QuizState {
         return this.questions.reduce((acc, question) => question.numIncorrects + acc, 0);
     }
 
+    toQuizResult(): QuizResult {
+        return {
+            id: "",
+            questions: this.questions.filter(q => q.numCorrects > 0 || q.numIncorrects > 0).map(q => ({ wordId: q.wordId, numCorrects: q.numCorrects, numIncorrects: q.numIncorrects }) as QuizWord ), 
+            createdAt: new Date().toISOString(),         
+        }
+    }
+
     private buildQuestions(words: Word[], policy?: QuizQuestionPolicy): Question[] {
         return words.map((w) => {
-            const question: Question = { question: "", answers: [], numCorrects: 0, numIncorrects: 0, kind: w.kind };
+            const question: Question = { question: "", answers: [], numCorrects: 0, numIncorrects: 0, kind: w.kind, wordId: w.id };
             switch (
             policy ||
             QuizQuestionPolicy.WordToTranslations

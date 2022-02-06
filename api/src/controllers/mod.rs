@@ -1,7 +1,4 @@
-mod folders;
-mod quiz;
-mod words;
-
-pub use folders::*;
-pub use quiz::*;
-pub use words::*;
+pub mod folders;
+pub mod quiz;
+pub mod stats;
+pub mod words;

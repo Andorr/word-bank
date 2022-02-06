@@ -34,17 +34,17 @@
           "
         >
           <ion-text>
-            <h1 v-if="currentQuestion" class="text-5xl">
+            <h1 v-if="currentQuestion" class="text-5xl text-center">
               {{ currentQuestion.question }}
             </h1>
           </ion-text>
           <ion-text>
-            <h1 v-if="currentQuestion" class="text-xs">
+            <h1 v-if="currentQuestion" class="text-xs text-center">
               {{ currentQuestion.kind }}
             </h1>
           </ion-text>
           <ion-text v-if="revealAnswer">
-            <h1 v-if="currentQuestion" class="text-2xl">
+            <h1 v-if="currentQuestion" class="text-2xl text-center">
               {{ currentQuestion.answers[0] }}
             </h1>
           </ion-text>
@@ -61,7 +61,7 @@
             <span>{{ stats.numIncorrects }}</span>
           </div>
           <btn
-            class="mx-auto rounded-full shadow-none bg-transparent bg-medium"
+            class="mx-auto rounded-full shadow-none bg-medium"
             :disabled="!isResultNone || isQuizFinished"
             @click="passQuestion"
             >Pass</btn
@@ -108,7 +108,7 @@ import { useRouter } from "vue-router";
 import { PATHS } from "@/URLS";
 import {
   Question,
-  QuizResult,
+  QuizQuestionResult,
   QuizState,
   QuizStatus,
   openEndQuizAlert,
@@ -163,15 +163,15 @@ export default defineComponent({
     const input = ref("");
     const inputElement = ref<InstanceType<any> | null>(null);
 
-    const questionResult = ref(QuizResult.None);
+    const questionResult = ref(QuizQuestionResult.None);
     const isResultNone = computed(
-      () => questionResult.value === QuizResult.None
+      () => questionResult.value === QuizQuestionResult.None
     );
     const isResultCorrect = computed(
-      () => questionResult.value === QuizResult.Correct
+      () => questionResult.value === QuizQuestionResult.Correct
     );
     const isResultIncorrect = computed(
-      () => questionResult.value === QuizResult.Incorrect
+      () => questionResult.value === QuizQuestionResult.Incorrect
     );
     const revealAnswer = ref(false);
     const isQuizFinished = computed(
@@ -204,7 +204,7 @@ export default defineComponent({
 
     const nextQuestion = () => {
       currentQuestion.value = quizState.value.nextQuestion();
-      questionResult.value = QuizResult.None;
+      questionResult.value = QuizQuestionResult.None;
       if (inputElement.value !== null) {
         inputElement.value.$el.setFocus();
       }
@@ -214,18 +214,18 @@ export default defineComponent({
       }
     };
 
-    const showResult = (result: QuizResult, isAPass = false) => {
+    const showResult = (result: QuizQuestionResult, isAPass = false) => {
       questionResult.value = result;
 
-      if (result === QuizResult.Correct || isAPass) {
+      if (result === QuizQuestionResult.Correct || isAPass) {
         revealAnswer.value = true;
       }
 
       setTimeout(() => {
-        if (result === QuizResult.Correct || isAPass) {
+        if (result === QuizQuestionResult.Correct || isAPass) {
           nextQuestion();
         } else {
-          questionResult.value = QuizResult.None;
+          questionResult.value = QuizQuestionResult.None;
         }
 
         revealAnswer.value = false;
@@ -245,7 +245,7 @@ export default defineComponent({
     const passQuestion = () => {
       quizState.value.passQuestion();
       stats.value = quizState.value.getStats();
-      showResult(QuizResult.Incorrect, true);
+      showResult(QuizQuestionResult.Incorrect, true);
     };
 
     return {

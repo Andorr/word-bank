@@ -11,7 +11,7 @@ use crate::{
     state::State,
 };
 
-pub async fn folders_list(req: Request<State>) -> tide::Result {
+pub async fn list(req: Request<State>) -> tide::Result {
     let state = req.state();
     let client = &state.client;
 
@@ -40,7 +40,7 @@ struct FolderResult {
     content: FolderContent,
 }
 
-pub async fn folder_get(req: Request<State>) -> tide::Result {
+pub async fn get(req: Request<State>) -> tide::Result {
     let folder_id = match Uuid::parse_str(req.param("id").unwrap()) {
         Ok(id) => id,
         Err(err) => return Ok(build_error_res(400, "INVALID_ID", err.to_string().as_str())),
@@ -78,7 +78,7 @@ struct BodyFolderUpsertOptions {
     parent: Option<Option<Uuid>>,
 }
 
-pub async fn folder_create(mut req: Request<State>) -> tide::Result {
+pub async fn create(mut req: Request<State>) -> tide::Result {
     let insert_options: BodyFolderUpsertOptions = match req.body_json().await {
         Ok(options) => options,
         Err(err) => {
@@ -142,7 +142,7 @@ pub async fn folder_create(mut req: Request<State>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn folder_update(mut req: Request<State>) -> tide::Result {
+pub async fn update(mut req: Request<State>) -> tide::Result {
     let folder_id = match Uuid::parse_str(req.param("id").unwrap()) {
         Ok(id) => id,
         Err(err) => return Ok(build_error_res(400, "INVALID_ID", err.to_string().as_str())),
@@ -181,7 +181,7 @@ pub async fn folder_update(mut req: Request<State>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn folder_delete(req: Request<State>) -> tide::Result {
+pub async fn delete(req: Request<State>) -> tide::Result {
     let folder_id = match Uuid::parse_str(req.param("id").unwrap()) {
         Ok(id) => id,
         Err(err) => return Ok(build_error_res(400, "INVALID_ID", err.to_string().as_str())),

@@ -1,4 +1,4 @@
-import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, Word, WordQueryOptions } from "@/lib/models";
+import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, QuizResult, Word, WordQueryOptions } from "@/lib/models";
 import WordBank from "@/lib/WordBankClient";
 import { ActionTree } from "vuex";
 import { State } from '.';
@@ -17,6 +17,8 @@ export const enum ACTIONS {
     FOLDER_DELETE = 'FOLDER_DELETE',
 
     QUIZ_START = 'QUIZ_START',
+    QUIZ_INSERT_RESULT = 'QUIZ_INSERT_RESULT',
+
 }
 
 export const actions: ActionTree<State, any> = {
@@ -119,6 +121,11 @@ export const actions: ActionTree<State, any> = {
             store.commit(MUTATIONS.QUIZ_SET, q);
             return q;
         })
+    },
+    [ACTIONS.QUIZ_INSERT_RESULT](store, result: QuizResult): Promise<QuizResult> {
+        return WordBank.insertQuizResult(result).then((qr: QuizResult) => {
+            return qr;
+        });
     }
 }
 

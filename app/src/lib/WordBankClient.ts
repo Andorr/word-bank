@@ -1,5 +1,5 @@
 import { FetchError } from "./errors";
-import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, Word, WordQueryOptions } from "./models";
+import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, QuizResult, Word, WordQueryOptions } from "./models";
 
 export default class WordBank {
 
@@ -138,6 +138,18 @@ export default class WordBank {
         .then((q: Quiz) => {
             return q;
         });
+    }
+
+    static insertQuizResult(quizResult: QuizResult): Promise<QuizResult> {
+        return this.doRequest(
+            "POST",
+            "api/v1/quiz/result",
+            undefined,
+            quizResult,
+        ).then(res => res.json())
+        .then((q: QuizResult) => {
+            return q;
+        })
     }
 
 

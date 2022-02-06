@@ -4,10 +4,11 @@ use uuid::Uuid;
 pub use crate::models::{Folder, Translation, Word};
 use crate::{
     models::{
-        quiz::Quiz, quiz::QuizOptions, FolderContent, FolderQueryOptions, FolderUpdateOptions,
-        PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions,
+        quiz::Quiz, quiz::QuizOptions, stats::UserStatistics, FolderContent, FolderQueryOptions,
+        FolderUpdateOptions, PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions,
     },
     mongo::{DBOptions, MongoContext, MongoDBClient},
+    quiz::QuizResult,
     DB,
 };
 
@@ -212,5 +213,17 @@ impl WordBankClient {
             words,
             options,
         })
+    }
+
+    pub fn insert_quiz_result(
+        &self,
+        ctx: &mut Context,
+        result: &mut QuizResult,
+    ) -> Result<Uuid, ()> {
+        self.db.insert_quiz_result(ctx, result)
+    }
+
+    pub fn get_user_statistics(&self, ctx: &mut Context) -> Result<UserStatistics, ()> {
+        self.db.get_user_statistics(ctx)
     }
 }

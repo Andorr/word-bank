@@ -49,45 +49,56 @@ async fn main() -> tide::Result<()> {
 
     app.at("/api/v1/words")
         .with(authorization.clone())
-        .get(controllers::words_list);
+        .get(controllers::words::list);
 
     app.at("/api/v1/words")
         .with(authorization.clone())
-        .post(controllers::word_create);
+        .post(controllers::words::create);
 
     app.at("/api/v1/words/:id")
         .with(authorization.clone())
-        .put(controllers::word_update);
+        .put(controllers::words::update);
 
     app.at("/api/v1/words/:id")
         .with(authorization.clone())
-        .delete(controllers::words_delete);
+        .delete(controllers::words::delete);
 
     // ---- FOLDERS ENDPOINTS ----
 
     app.at("/api/v1/folders")
         .with(authorization.clone())
-        .get(controllers::folders_list);
+        .get(controllers::folders::list);
 
     app.at("/api/v1/folders")
         .with(authorization.clone())
-        .post(controllers::folder_create);
+        .post(controllers::folders::create);
 
     app.at("/api/v1/folders/:id")
         .with(authorization.clone())
-        .get(controllers::folder_get);
+        .get(controllers::folders::get);
 
     app.at("/api/v1/folders/:id")
         .with(authorization.clone())
-        .put(controllers::folder_update);
+        .put(controllers::folders::update);
 
     app.at("/api/v1/folders/:id")
         .with(authorization.clone())
-        .delete(controllers::folder_delete);
+        .delete(controllers::folders::delete);
+
+    // ---- QUIZ ENDPOINTS ----
 
     app.at("/api/v1/quiz")
         .with(authorization.clone())
-        .post(controllers::quiz_initialize);
+        .post(controllers::quiz::initialize);
+
+    app.at("/api/v1/quiz/result")
+        .with(authorization.clone())
+        .post(controllers::quiz::insert_result);
+
+    // ---- STAT ENDPOINTS ----
+    app.at("/api/v1/stats")
+        .with(authorization.clone())
+        .get(controllers::stats::get_user_statistics);
 
     app.listen(format!("{}:{}", host, port)).await?;
 

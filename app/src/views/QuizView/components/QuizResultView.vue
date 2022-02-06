@@ -15,7 +15,11 @@
         </p>
       </div>
       <div class="px-4 my-4 w-full">
-        <btn class="w-full shadow-md bg-white text-gray-700" @click="exitQuiz">
+        <btn
+          class="w-full shadow-md bg-white text-gray-700"
+          :disabled="isLoading"
+          @click="exitQuiz"
+        >
           Continue
         </btn>
       </div>
@@ -78,6 +82,8 @@ import {
 } from "ionicons/icons";
 import { useRouter } from "vue-router";
 import { PATHS } from "@/URLS";
+import { useStore } from "vuex";
+import { ACTIONS } from "@/store/actions";
 
 export default defineComponent({
   name: "QuizResultView",
@@ -91,10 +97,15 @@ export default defineComponent({
   setup(props) {
     const root = ref();
     const router = useRouter();
+    const store = useStore();
+
+    // Data
+    const isLoading = ref(false);
 
     const anim = createAnimation()
       .duration(1400)
       .fromTo("opacity", "0.0", "1.0");
+
     const stats = props.quizState.getStats();
     const percentage = ref(0.0);
     const finishedAnyQuestion = props.quizState.questions.some(
@@ -119,6 +130,19 @@ export default defineComponent({
       }
     };
 
+    const saveQuizResult = () => {
+      isLoading.value = true;
+
+      store
+        .dispatch(ACTIONS.QUIZ_INSERT_RESULT, props.quizState.toQuizResult())
+        .catch(() => {
+          // TODO: Show pop-up error
+        })
+        .finally(() => {
+          isLoading.value = false;
+        });
+    };
+
     onMounted(() => {
       anim.addElement(root.value);
       setTimeout(() => {
@@ -130,6 +154,8 @@ export default defineComponent({
           lerpPercentage(0.0);
         }, 1000);
       }
+
+      saveQuizResult();
     });
 
     const exitQuiz = () => {
@@ -141,6 +167,7 @@ export default defineComponent({
       percentage,
       questions: props.quizState.questions,
       stats: props.quizState.getStats(),
+      isLoading,
       exitQuiz,
       icons: {
         checkmark: checkmarkCircleOutline,

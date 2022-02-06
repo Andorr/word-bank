@@ -19,7 +19,7 @@ impl PaginationOptionalOptions {
     }
 }
 
-pub async fn words_list(req: Request<State>) -> tide::Result {
+pub async fn list(req: Request<State>) -> tide::Result {
     let state = req.state();
     let client = &state.client;
 
@@ -48,7 +48,7 @@ struct BodyWordUpsertOptions {
     folder: Option<Uuid>,
 }
 
-pub async fn word_create(mut req: Request<State>) -> tide::Result {
+pub async fn create(mut req: Request<State>) -> tide::Result {
     let insert_options: BodyWordUpsertOptions = match req.body_json().await {
         Ok(options) => options,
         Err(err) => {
@@ -107,7 +107,7 @@ pub async fn word_create(mut req: Request<State>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn word_update(mut req: Request<State>) -> tide::Result {
+pub async fn update(mut req: Request<State>) -> tide::Result {
     let word_id = match Uuid::parse_str(req.param("id").unwrap()) {
         Ok(id) => id,
         Err(err) => return Ok(build_error_res(400, "INVALID_ID", err.to_string().as_str())),
@@ -148,7 +148,7 @@ pub async fn word_update(mut req: Request<State>) -> tide::Result {
     Ok(response)
 }
 
-pub async fn words_delete(req: Request<State>) -> tide::Result {
+pub async fn delete(req: Request<State>) -> tide::Result {
     let word_id = match Uuid::parse_str(req.param("id").unwrap()) {
         Ok(id) => id,
         Err(err) => return Ok(build_error_res(400, "INVALID_ID", err.to_string().as_str())),
