@@ -25,9 +25,12 @@ export type Question = {
 export type QuizStats = {
     numCorrects: number;
     numIncorrects: number;
+    numQuestionWins: number;
+    numQuestionLosses: number;
     scorePercentage: number;
     numQuestionsAnswered: number;
     totalNumQuestions: number;
+
 }
 
 export class QuizState {
@@ -43,9 +46,13 @@ export class QuizState {
         this.status = QuizStatus.NotStarted;
         this.questionIndex = 0;
         this.options = options;
+        const numQuestionWins = this.questions.filter(q => q.numCorrects >= q.numIncorrects).length;
+        const numQuestionLosses = this.questions.filter(q => q.numCorrects < q.numIncorrects).length;
         this.stats = {
             numCorrects: 0,
             numIncorrects: 0,
+            numQuestionWins,
+            numQuestionLosses,
             scorePercentage: 0,
             numQuestionsAnswered: 0,
             totalNumQuestions: this.questions.length,
@@ -101,11 +108,15 @@ export class QuizState {
     }
 
     getStats(): QuizStats {
-        const corrects = this.numCorrect;
-        const incorrects = this.numIncorrect;
+        const numQuestionWins = this.questions.filter(q => q.numCorrects >= q.numIncorrects).length;
+        const numQuestionLosses = this.questions.filter(q => q.numCorrects < q.numIncorrects).length;
+        const numQuestionsAnswered = this.questions.filter(q => q.numCorrects > 0 || q.numIncorrects > 0).length;
+
         this.stats.numCorrects = this.numCorrect;
         this.stats.numIncorrects = this.numIncorrect;
-        this.stats.scorePercentage = (corrects)/((corrects + incorrects) || 1);
+        this.stats.scorePercentage = (numQuestionWins)/((numQuestionsAnswered) || 1);
+        this.stats.numQuestionWins = numQuestionWins;
+        this.stats.numQuestionLosses = numQuestionLosses;
         return this.stats;
     }
 

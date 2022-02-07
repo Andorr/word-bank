@@ -7,8 +7,8 @@
           {{ percentage.toFixed(0) }} %
         </p>
         <p v-if="stats && finishedAnyQuestion" class="text-xl text-center">
-          {{ stats.numCorrects }} /
-          {{ stats.numCorrects + stats.numIncorrects }}
+          {{ stats.numQuestionWins }} /
+          {{ stats.numQuestionWins + stats.numQuestionLosses }}
         </p>
         <p v-if="!finishedAnyQuestion" class="text-xl text-center">
           What was that?
@@ -153,9 +153,9 @@ export default defineComponent({
         setTimeout(() => {
           lerpPercentage(0.0);
         }, 1000);
-      }
 
-      saveQuizResult();
+        saveQuizResult();
+      }
     });
 
     const exitQuiz = () => {

@@ -26,7 +26,7 @@ import './theme/index.css';
 import { store } from './store';
 
 const app = createApp(App)
-  .use(IonicVue)
+  .use(IonicVue, { mode: 'ios' })
   .use(router)
   .use(store);
 

@@ -1,5 +1,5 @@
 <template>
-  <page :header="false">
+  <page>
     <div class="flex flex-col h-full" v-if="showQuizView">
       <div
         class="bg-primary h-64 w-full relative"
@@ -80,7 +80,7 @@
           </div>
         </div>
         <div class="flex-grow" />
-        <div class="px-5 py-2 mb-3">
+        <div class="px-5 py-2 mb-5">
           <div class="bg-color-light rounded px-2 mb-3">
             <ion-input
               ref="inputElement"
@@ -207,6 +207,7 @@ export default defineComponent({
       questionResult.value = QuizQuestionResult.None;
       if (inputElement.value !== null) {
         inputElement.value.$el.setFocus();
+        input.value = "";
       }
 
       if (quizState.value.status === QuizStatus.Finished) {
