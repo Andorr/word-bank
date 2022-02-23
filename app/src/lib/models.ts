@@ -135,7 +135,7 @@ export enum QuizQuestionPolicy {
 }
 
 export type QuizWordOption = {
-    folderId?: string;
+    folders?: string[];
     count?: number;
 }
 

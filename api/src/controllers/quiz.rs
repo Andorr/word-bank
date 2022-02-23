@@ -24,7 +24,7 @@ pub async fn initialize(mut req: Request<State>) -> tide::Result {
 
     let mut ctx = client.new_context().unwrap();
 
-    let quiz = match client.initialize_quiz(&mut ctx, quiz_options) {
+    let quiz = match client.initialize_quiz(&mut ctx, &quiz_options) {
         Ok(q) => q,
         Err(_) => return Ok(err_server_error()),
     };

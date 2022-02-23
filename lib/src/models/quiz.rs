@@ -15,7 +15,7 @@ pub enum QuizMode {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuizWordOption {
-    pub folder_id: Option<Uuid>,
+    pub folders: Option<Vec<Uuid>>,
     pub count: Option<u32>,
 }
 

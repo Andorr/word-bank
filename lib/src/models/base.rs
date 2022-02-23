@@ -174,6 +174,7 @@ pub struct FolderQueryOptions {
     pub query: Option<String>,
     pub words: Option<Vec<Uuid>>,
     pub parent: Option<Uuid>,
+    pub ids: Option<Vec<Uuid>>,
 }
 
 impl FolderQueryOptions {
@@ -182,7 +183,13 @@ impl FolderQueryOptions {
             query: None,
             words: None,
             parent: None,
+            ids: None,
         }
+    }
+
+    pub fn ids(mut self, ids: Vec<Uuid>) -> Self {
+        self.ids = Some(ids);
+        self
     }
 }
 

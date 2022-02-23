@@ -250,6 +250,15 @@ impl FolderQueryOptions {
             );
         }
 
+        if let Some(ids) = self.ids {
+            document.insert(
+                "_id",
+                doc! {
+                    "$in": ids,
+                },
+            );
+        }
+
         document
     }
 

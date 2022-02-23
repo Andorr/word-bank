@@ -64,6 +64,7 @@ impl WordBankClient {
                 query: None,
                 words: Some(vec![word_id.clone()]),
                 parent: None,
+                ids: None,
             },
             PaginationOptions::new(PAGINATION_LIMIT, 1),
         ) {
@@ -97,6 +98,10 @@ impl WordBankClient {
 
     pub fn update_word(&self, update_options: WordUpdateOptions) -> Result<(), ()> {
         self.db.update_word(&update_options)
+    }
+
+    pub fn get_random_words(&self, ctx: &mut Context, count: u32) -> Result<Vec<Word>, ()> {
+        self.db.random_words(ctx, count)
     }
 
     pub fn insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()> {
@@ -139,6 +144,7 @@ impl WordBankClient {
                 query: None,
                 words: None,
                 parent: Some(folder.id),
+                ids: None,
             },
             PaginationOptions::new(PAGINATION_LIMIT, 1),
         ) {
@@ -167,6 +173,7 @@ impl WordBankClient {
                 query: None,
                 words: None,
                 parent: Some(folder.id.clone()),
+                ids: None,
             },
             PaginationOptions::new(PAGINATION_LIMIT, 1),
         ) {
@@ -185,19 +192,27 @@ impl WordBankClient {
         })
     }
 
-    pub fn initialize_quiz(&self, ctx: &mut Context, options: QuizOptions) -> Result<Quiz, ()> {
-        let words = match options.words.folder_id {
-            Some(f_id) => {
-                let folder = match self.get_folder(ctx, f_id) {
-                    Ok(f) => f,
+    pub fn initialize_quiz(&self, ctx: &mut Context, options: &QuizOptions) -> Result<Quiz, ()> {
+        let words = match &options.words.folders {
+            Some(f_ids) => {
+                let word_ids: Vec<Uuid> = match self.db.query_folders(
+                    ctx,
+                    FolderQueryOptions::empty().ids(f_ids.clone()),
+                    PaginationOptions::new(10, 1),
+                ) {
+                    Ok(fs) => fs
+                        .results
+                        .iter()
+                        .map(|f| f.words.clone())
+                        .flatten()
+                        .collect(),
                     Err(_) => return Err(()),
                 };
 
-                let content = match self.get_folder_content(ctx, &folder) {
+                match self.db.get_words(word_ids) {
                     Ok(f) => f,
                     Err(_) => return Err(()),
-                };
-                content.words
+                }
             }
             None => {
                 if let Ok(w) = self.db.random_words(ctx, options.words.count.unwrap_or(16)) {
@@ -211,7 +226,7 @@ impl WordBankClient {
         Ok(Quiz {
             id: Uuid::new_v4(),
             words,
-            options,
+            options: options.clone(),
         })
     }
 

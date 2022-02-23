@@ -1,5 +1,5 @@
 <template>
-  <page>
+  <page :backButton="false">
     <div class="flex flex-col h-full" v-if="showQuizView">
       <div
         class="bg-primary h-64 w-full relative"

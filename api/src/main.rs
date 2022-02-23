@@ -63,6 +63,10 @@ async fn main() -> tide::Result<()> {
         .with(authorization.clone())
         .delete(controllers::words::delete);
 
+    app.at("/api/v1/words/random")
+        .with(authorization.clone())
+        .get(controllers::words::random);
+
     // ---- FOLDERS ENDPOINTS ----
 
     app.at("/api/v1/folders")

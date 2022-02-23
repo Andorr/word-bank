@@ -64,7 +64,11 @@
             @click="toggleFolder(f.id)"
           >
             <ion-label> {{ f.name }} ({{ f.words.length }}) </ion-label>
-            <ion-icon v-if="f.id === folderId" slot="end" :icon="icons.check" />
+            <ion-icon
+              v-if="selectedFolders[f.id]"
+              slot="end"
+              :icon="icons.check"
+            />
           </ion-item>
         </ion-list>
       </div>
@@ -86,6 +90,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { PATHS } from "@/URLS";
+import { openErrorAlert } from "@/utils/alerts";
 
 // Store
 import {
@@ -143,7 +148,10 @@ export default defineComponent({
       return this.quizWordOption === QuizWordOption.Random;
     },
     isFormValid(): boolean {
-      return this.isQuizWordOptionRandom || this.folderId !== null;
+      return (
+        this.isQuizWordOptionRandom ||
+        Object.keys(this.selectedFolders).length > 0
+      );
     },
   },
   data() {
@@ -181,7 +189,7 @@ export default defineComponent({
 
       folderQuery: "" as string,
       folders: [] as Folder[],
-      folderId: null as string | null, // Selected folder Id
+      selectedFolders: {} as { [key: string]: boolean },
     };
   },
   methods: {
@@ -190,9 +198,9 @@ export default defineComponent({
         mode: this.quizMode,
         policy: this.quizQuestionPolicy,
         words: {
-          folderId: this.isQuizWordOptionRandom
+          folders: this.isQuizWordOptionRandom
             ? undefined
-            : (this.folderId as string),
+            : Object.keys(this.selectedFolders),
           count: this.isQuizWordOptionRandom ? this.wordCount : undefined,
         },
       };
@@ -202,6 +210,17 @@ export default defineComponent({
       this.$store
         .dispatch(ACTIONS.QUIZ_START, this.buildOptions())
         .then((q: Quiz) => {
+          if (q.words.length === 0) {
+            openErrorAlert(
+              "No words",
+              "Was not able to initialize quiz due to missing words.",
+              () => {
+                return;
+              }
+            );
+            return;
+          }
+
           this.$router.push(PATHS.quiz(q.id));
         })
         .finally(() => (this.isLoading = false));
@@ -215,12 +234,16 @@ export default defineComponent({
         } as ActionFolderQueryOptions)
         .then((result: PageResult<Folder>) => {
           this.folders = result.results.filter((f) => f.words.length > 0);
-          this.folderId = null;
+          this.selectedFolders = {};
         })
         .finally(() => (this.isLoadingFolders = false));
     },
     toggleFolder(id: string) {
-      this.folderId = this.folderId === id ? null : id;
+      if (this.selectedFolders[id]) {
+        delete this.selectedFolders[id];
+      } else {
+        this.selectedFolders[id] = true;
+      }
     },
   },
   mounted() {

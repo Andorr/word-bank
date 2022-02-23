@@ -170,3 +170,38 @@ pub async fn delete(req: Request<State>) -> tide::Result {
         Err(_) => Ok(err_server_error()),
     }
 }
+
+#[derive(Deserialize)]
+struct WordRandomQueryParams {
+    count: Option<u32>,
+}
+
+pub async fn random(req: Request<State>) -> tide::Result {
+    let query_params: WordRandomQueryParams = match req.query() {
+        Ok(params) => params,
+        Err(err) => {
+            return Ok(build_error_res(
+                400,
+                "INVALID_QUERY_PARAMS",
+                err.to_string().as_str(),
+            ))
+        }
+    };
+
+    let state = req.state();
+    let client = &state.client;
+
+    let mut ctx = client.new_context().unwrap();
+
+    let res = match client.get_random_words(&mut ctx, query_params.count.unwrap_or(16)) {
+        Ok(words) => Response::builder(200)
+            .body(Body::from_json(&words)?)
+            .build(),
+        Err(_) => err_server_error(),
+    };
+
+    match ctx.commit() {
+        Ok(_) => Ok(res),
+        Err(_) => Ok(err_server_error()),
+    }
+}
