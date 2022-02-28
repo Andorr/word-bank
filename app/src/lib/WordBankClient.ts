@@ -152,6 +152,18 @@ export default class WordBank {
         })
     }
 
+    static random(count: number): Promise<Word[]> {
+        return this.doRequest(
+            "GET",
+            "api/v1/words/random",
+            { count: count },
+            undefined,
+        ).then(res => res.json())
+        .then((words: Word[]) => {
+            return words;
+        })
+    }
+
 
     private static doRequest(method: string, path: string, params: Record<string, any> = {}, body: any = undefined): Promise<Response> {
         const query = {
