@@ -2,5 +2,8 @@
 	"appId": "com.andorr.word-bank",
 	"appName": "WordBank",
 	"webDir": "dist",
-	"bundledWebRuntime": false
+	"bundledWebRuntime": false,
+	"plugins": {
+		"LocalNotifications": {}
+	}
 }
