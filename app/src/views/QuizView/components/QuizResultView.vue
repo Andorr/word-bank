@@ -14,7 +14,7 @@
           What was that?
         </p>
       </div>
-      <div class="px-4 my-4 w-full">
+      <div class="px-4 my-4 w-full p-safe-area-bottom">
         <btn
           class="w-full shadow-md bg-white text-gray-700"
           :disabled="isLoading"
@@ -24,7 +24,7 @@
         </btn>
       </div>
     </div>
-    <div v-if="questions.length > 0" class="m-5 mb-6">
+    <div v-if="questions.length > 0" class="m-5 mb-6 p-safe-area-bottom">
       <div class="ml-5 mb-6">
         <ion-text class="text-2xl font-bold">Results:</ion-text>
       </div>

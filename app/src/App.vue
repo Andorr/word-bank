@@ -7,6 +7,7 @@
 <script lang="ts">
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { IonApp, IonRouterOutlet } from "@ionic/vue";
+import { Capacitor } from "@capacitor/core";
 import { defineComponent } from "vue";
 import { initializeWordReminderNotifications } from "./native/notifications";
 import { initializeStorage } from "./native/storage";
@@ -17,16 +18,23 @@ export default defineComponent({
     IonApp,
     IonRouterOutlet,
   },
+  methods: {
+    initializeLocalNotifications() {
+      LocalNotifications.requestPermissions().then((status) => {
+        initializeStorage()
+          .then(() => {
+            if (status.display === "granted") {
+              return initializeWordReminderNotifications();
+            }
+          })
+          .catch(console.error);
+      });
+    },
+  },
   mounted() {
-    LocalNotifications.requestPermissions().then((status) => {
-      initializeStorage()
-        .then(() => {
-          if (status.display === "granted") {
-            return initializeWordReminderNotifications();
-          }
-        })
-        .catch(console.error);
-    });
+    if (Capacitor.isNativePlatform()) {
+      this.initializeLocalNotifications();
+    }
   },
 });
 </script>

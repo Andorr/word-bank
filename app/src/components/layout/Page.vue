@@ -11,7 +11,8 @@
       </ion-toolbar>
       <slot name="header"></slot>
     </ion-header>
-    <ion-content fullscreen>
+    <ion-content>
+      <div v-if="safeArea" class="p-safe-area-top" :class="safeAreaClass" />
       <slot />
     </ion-content>
   </ion-page>
@@ -51,6 +52,14 @@ export default defineComponent({
     backButton: {
       type: Boolean,
       default: true,
+    },
+    safeArea: {
+      type: Boolean,
+      default: false,
+    },
+    safeAreaClass: {
+      type: String,
+      default: "",
     },
   },
 });
