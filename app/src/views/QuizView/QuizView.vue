@@ -2,6 +2,10 @@
   <page :header="false">
     <div class="flex flex-col h-full" v-if="showQuizView">
       <div
+        class="p-safe-area-top bg-primary"
+        :class="{ correct: isResultCorrect, incorrect: isResultIncorrect }"
+      />
+      <div
         class="bg-primary h-64 w-full relative"
         :class="{ correct: isResultCorrect, incorrect: isResultIncorrect }"
       >
@@ -11,7 +15,7 @@
             top-0
             left-0
             w-full
-            p-2
+            px-2
             flex
             items-center
             justify-end
@@ -80,7 +84,7 @@
           </div>
         </div>
         <div class="flex-grow" />
-        <div class="px-5 py-2 mb-5">
+        <div class="px-5 pt-2 mb-5 p-safe-area-bottom">
           <div class="bg-color-light rounded px-2 mb-3">
             <ion-input
               ref="inputElement"

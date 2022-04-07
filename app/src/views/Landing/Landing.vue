@@ -1,6 +1,7 @@
 <template>
   <ion-page>
     <ion-content>
+      <div class="p-safe-area-top bg-primary" />
       <div class="h-64 bg-primary w-full">
         <div class="h-full w-full flex justify-center items-center">
           <ion-text class="text-center text-4xl">안녕하세요!</ion-text>

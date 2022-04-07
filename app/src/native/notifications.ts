@@ -38,7 +38,7 @@ export const initializeWordReminderNotifications = async (): Promise<void> => {
                 hour: hours[i%hours.length],
             } as ScheduleOn
         },
-
+        sound: 'res://platform_default',
     } as LocalNotificationSchema))
 
     return LocalNotifications.schedule({
