@@ -1,7 +1,7 @@
 use std::{fs, io::Write};
 
 use directories::ProjectDirs;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -11,13 +11,12 @@ pub struct Config {
 
 impl Config {
     pub fn default_from_input() -> Config {
-
         println!("Wordbank config set up:");
         print!("URI: ");
         let _ = std::io::stdout().flush();
         let mut uri = String::new();
         let _ = std::io::stdin().read_line(&mut uri);
-        
+
         let mut database = String::new();
         print!("Database: ");
         let _ = std::io::stdout().flush();
@@ -39,17 +38,13 @@ pub fn init_config() -> Config {
     let config_dir = proj_dirs.config_dir();
     let config_path = config_dir.join("wordbank.toml");
 
-    dbg!(config_dir);
-    dbg!(&config_path);
+    // dbg!(config_dir);
+    // dbg!(&config_path);
 
-    let config_file = fs::read_to_string(
-        &config_path
-    );
+    let config_file = fs::read_to_string(&config_path);
 
     match config_file {
-        Ok(file) => {
-            toml::from_str(&file).unwrap()
-        },
+        Ok(file) => toml::from_str(&file).unwrap(),
         Err(_) => {
             let cfg = Config::default_from_input();
             let cfg_string = toml::to_string(&(cfg.clone())).expect("was not able to encode TOML");

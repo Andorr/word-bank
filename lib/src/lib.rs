@@ -1,6 +1,10 @@
+#[macro_use]
+extern crate diesel;
+
 mod client;
 mod models;
 pub mod mongo;
+pub mod psql;
 pub mod utils;
 
 pub use self::client::{WordBankClient, DB};

@@ -105,45 +105,6 @@ impl Translation {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Folder {
-    pub id: Uuid,
-    pub name: String,
-    pub parent: Option<Uuid>,
-    pub words: Vec<Uuid>,
-
-    #[serde(with = "datetime_serializer")]
-    pub created_at: DateTime<Utc>,
-
-    #[serde(with = "datetime_serializer")]
-    pub updated_at: DateTime<Utc>,
-}
-
-impl Folder {
-    pub fn new(name: &str) -> Folder {
-        Folder {
-            id: Uuid::new_v4(),
-            name: name.to_string(),
-            parent: None,
-            words: Vec::new(),
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
-
-    pub fn update_time(&mut self, time: DateTime<Utc>) {
-        self.created_at = time;
-        self.updated_at = time;
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FolderContent {
-    pub words: Vec<Word>,
-    pub folders: Vec<Folder>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordQueryOptions {
     pub query: Option<String>,
@@ -170,86 +131,10 @@ impl Default for WordQueryOptions {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FolderQueryOptions {
-    pub query: Option<String>,
-    pub words: Option<Vec<Uuid>>,
-    pub parent: Option<Uuid>,
-    pub ids: Option<Vec<Uuid>>,
-}
-
-impl FolderQueryOptions {
-    pub fn empty() -> FolderQueryOptions {
-        FolderQueryOptions {
-            query: None,
-            words: None,
-            parent: None,
-            ids: None,
-        }
-    }
-
-    pub fn ids(mut self, ids: Vec<Uuid>) -> Self {
-        self.ids = Some(ids);
-        self
-    }
-}
-
-impl Default for FolderQueryOptions {
-    fn default() -> Self {
-        FolderQueryOptions::empty()
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct PaginationOptions {
-    pub limit: usize,
-    pub page: usize,
-}
-
-impl Default for PaginationOptions {
-    fn default() -> Self {
-        Self { limit: 25, page: 1 }
-    }
-}
-
-impl PaginationOptions {
-    pub fn new(limit: usize, page: usize) -> PaginationOptions {
-        PaginationOptions {
-            limit: limit,
-            page: if page != 0 { page } else { 1 }, // Page == 0 is not allowed
-        }
-    }
-
-    pub fn default() -> PaginationOptions {
-        PaginationOptions { limit: 10, page: 1 }
-    }
-
-    pub fn skip(&self) -> usize {
-        return self.limit * (self.page - 1);
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PageResult<T> {
-    pub total: usize,
-    pub page: usize,
-    pub count: usize,
-    pub results: Vec<T>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WordUpdateOptions {
     pub id: Uuid,
     pub word: Option<String>,
     pub kind: Option<WordType>,
     pub tags: Option<Vec<String>>,
     pub translations: Option<Vec<Translation>>,
-}
-
-#[derive(Debug, Clone)]
-pub struct FolderUpdateOptions {
-    pub id: Uuid,
-    pub name: Option<String>,
-    pub parent: Option<Option<Uuid>>,
-    pub add: Option<Vec<Uuid>>,
-    pub remove: Option<Vec<Uuid>>,
 }
