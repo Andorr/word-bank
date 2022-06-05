@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::utils::datetime_serializer;
 
-use crate::Word;
+use super::word::Word;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum QuizMode {

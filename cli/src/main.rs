@@ -1,6 +1,6 @@
 mod config;
 
-use std::{fs, str::FromStr};
+use std::{fs, io::Write, str::FromStr};
 
 use config::Config;
 use lib::{
@@ -143,9 +143,12 @@ fn list_words(cfg: &Config, matches: &ArgMatches) {
         query_options.query = Some(query.to_string());
     }
 
+    print!("Loading...");
+    std::io::stdout().flush().unwrap();
     let result = client
         .query_words(query_options, PaginationOptions::new(limit, page))
         .expect("was not able to list errors");
+    print!("\r");
 
     println!("Count: {}", result.count);
     println!("Total: {}", result.total);
