@@ -1,5 +1,4 @@
 use crate::{
-    client::Context,
     models::{stats::UserStatistics, PageResult, PaginationOptions, WordQueryOptions},
     quiz::QuizResult,
     Folder, Translation, Word, WordUpdateOptions, DB,
@@ -63,7 +62,9 @@ impl MongoDBClient {
 }
 
 impl DB for MongoDBClient {
-    fn new_context(&self) -> Result<Context, ()> {
+    type Context = MongoContext;
+
+    fn new_context(&self) -> Result<Self::Context, ()> {
         let result = self.client.start_session(None);
         if result.is_err() {
             return Err(());
@@ -76,7 +77,7 @@ impl DB for MongoDBClient {
         Ok(MongoContext::new(session))
     }
 
-    fn insert_word(&self, ctx: &mut Context, word: &mut Word) -> Result<Uuid, ()> {
+    fn insert_word(&self, ctx: &mut Self::Context, word: &mut Word) -> Result<Uuid, ()> {
         self.handle_insert_word(ctx, word)
     }
 
@@ -129,7 +130,7 @@ impl DB for MongoDBClient {
         })
     }
 
-    fn delete_word(&self, ctx: &mut Context, word_id: Uuid) -> Result<(), ()> {
+    fn delete_word(&self, ctx: &mut Self::Context, word_id: Uuid) -> Result<(), ()> {
         self.handle_delete_word(ctx, word_id)
     }
 
@@ -141,23 +142,23 @@ impl DB for MongoDBClient {
         self.handle_get_words(ids)
     }
 
-    fn random_words(&self, ctx: &mut Context, count: u32) -> Result<Vec<Word>, ()> {
+    fn random_words(&self, ctx: &mut Self::Context, count: u32) -> Result<Vec<Word>, ()> {
         self.handle_get_random_words(ctx, count)
     }
 
     // ---- FOLDER IMPLEMENTATIONS ----
 
-    fn insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()> {
+    fn insert_folder(&self, ctx: &mut Self::Context, folder: &mut Folder) -> Result<Uuid, ()> {
         self.handle_insert_folder(ctx, folder)
     }
 
-    fn delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()> {
+    fn delete_folder(&self, ctx: &mut Self::Context, folder_id: Uuid) -> Result<(), ()> {
         self.handle_delete_folder(ctx, folder_id)
     }
 
     fn update_folder(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Self::Context,
         update_options: &crate::models::FolderUpdateOptions,
     ) -> Result<(), ()> {
         self.handle_update_folder(ctx, update_options)
@@ -167,23 +168,27 @@ impl DB for MongoDBClient {
 
     fn query_folders(
         &self,
-        ctx: &mut Context,
+        ctx: &mut Self::Context,
         query_options: crate::models::FolderQueryOptions,
         pagination: PaginationOptions,
     ) -> Result<PageResult<Folder>, ()> {
         self.handle_query_folders(ctx, query_options, pagination)
     }
 
-    fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()> {
+    fn get_folder(&self, ctx: &mut Self::Context, folder_id: Uuid) -> Result<Folder, ()> {
         self.handle_get_folder(ctx, folder_id)
     }
 
-    fn insert_quiz_result(&self, ctx: &mut Context, result: &mut QuizResult) -> Result<Uuid, ()> {
+    fn insert_quiz_result(
+        &self,
+        ctx: &mut Self::Context,
+        result: &mut QuizResult,
+    ) -> Result<Uuid, ()> {
         self.handle_insert_quiz_result(ctx, result)
     }
 
     // ---- STATS IMPLEMENTATIONS ----
-    fn get_user_statistics(&self, ctx: &mut Context) -> Result<UserStatistics, ()> {
+    fn get_user_statistics(&self, ctx: &mut Self::Context) -> Result<UserStatistics, ()> {
         self.handle_get_user_statistics(ctx)
     }
 }

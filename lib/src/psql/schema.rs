@@ -1,5 +1,3 @@
-use crate::WordType;
-
 table! {
     folders (id) {
         id -> Uuid,
@@ -20,19 +18,17 @@ table! {
 }
 
 table! {
+    use diesel::sql_types::*;
+    use crate::psql::models::WordTypeMapping;
     words (id) {
         id -> Uuid,
         word -> Varchar,
-        kind -> crate::WordType,
+        kind -> WordTypeMapping,
         tags -> Array<Text>,
-        translations -> Array<crate::Translation>,
+        translations -> Array<crate::psql::models::TranslationEntry>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
 }
 
-allow_tables_to_appear_in_same_query!(
-    folders,
-    quiz_results,
-    words,
-);
+allow_tables_to_appear_in_same_query!(folders, quiz_results, words,);

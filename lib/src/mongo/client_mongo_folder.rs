@@ -5,17 +5,16 @@ use mongodb::{
 use uuid::Uuid;
 
 use crate::{
-    client::Context,
     models::{FolderQueryOptions, FolderUpdateOptions},
     Folder, PageResult, PaginationOptions,
 };
 
-use super::{models::FolderDBM, MongoDBClient};
+use super::{models::FolderDBM, MongoContext, MongoDBClient};
 
 impl MongoDBClient {
     pub fn handle_query_folders(
         &self,
-        ctx: &mut Context,
+        ctx: &mut MongoContext,
         query_options: FolderQueryOptions,
         pagination: PaginationOptions,
     ) -> Result<PageResult<Folder>, ()> {
@@ -59,7 +58,7 @@ impl MongoDBClient {
         })
     }
 
-    pub fn handle_get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()> {
+    pub fn handle_get_folder(&self, ctx: &mut MongoContext, folder_id: Uuid) -> Result<Folder, ()> {
         let folder_collection = self.folder_collection();
         match self.fetch_entity(folder_id, &folder_collection, &mut ctx.session) {
             Ok(f) => Ok(f.into()),
@@ -67,7 +66,11 @@ impl MongoDBClient {
         }
     }
 
-    pub fn handle_insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()> {
+    pub fn handle_insert_folder(
+        &self,
+        ctx: &mut MongoContext,
+        folder: &mut Folder,
+    ) -> Result<Uuid, ()> {
         let fdbm: FolderDBM = folder.into();
 
         let collection = self.folder_collection();
@@ -80,7 +83,7 @@ impl MongoDBClient {
         }
     }
 
-    pub fn handle_delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()> {
+    pub fn handle_delete_folder(&self, ctx: &mut MongoContext, folder_id: Uuid) -> Result<(), ()> {
         // Delete both the word and its related translations
         let folder_col = self.folder_collection();
         let result_folder_delete = folder_col.delete_one_with_session(
@@ -96,7 +99,7 @@ impl MongoDBClient {
 
     pub fn handle_update_folder(
         &self,
-        ctx: &mut Context,
+        ctx: &mut MongoContext,
         update_options: &FolderUpdateOptions,
     ) -> Result<(), ()> {
         let folder_col = self.folder_collection();

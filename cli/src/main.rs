@@ -4,8 +4,8 @@ use std::{fs, io::Write, str::FromStr};
 
 use config::Config;
 use lib::{
-    mongo::DBOptions, Folder, PaginationOptions, Translation, Word, WordBankClient,
-    WordQueryOptions, WordType,
+    mongo::{DBOptions, MongoDBClient},
+    Folder, PaginationOptions, Translation, Word, WordBankClient, WordQueryOptions, WordType,
 };
 
 use clap::{App, Arg, ArgMatches};
@@ -93,7 +93,7 @@ fn insert_word(cfg: &Config, word: &str, translations: &Vec<&str>, kind: &str) {
         database: cfg.database.clone(),
     };
 
-    let client = WordBankClient::from_mongo(options).unwrap();
+    let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
     let mut context = client.new_context().unwrap();
 
     let mut w = Word::from_value(word);
@@ -125,7 +125,7 @@ fn list_words(cfg: &Config, matches: &ArgMatches) {
         database: cfg.database.clone(),
     };
 
-    let client = WordBankClient::from_mongo(options).unwrap();
+    let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
 
     let limit = matches
         .value_of("limit")
@@ -208,7 +208,7 @@ fn import_words_from_file(cfg: &Config, matches: &ArgMatches) {
         database: cfg.database.clone(),
     };
 
-    let client = WordBankClient::from_mongo(options).unwrap();
+    let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
     let mut context = client.new_context().unwrap();
 
     let mut count = 0;
@@ -265,7 +265,7 @@ fn import_folders_from_file(cfg: &Config, matches: &ArgMatches) {
         database: cfg.database.clone(),
     };
 
-    let client = WordBankClient::from_mongo(options).unwrap();
+    let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
     let mut context = client.new_context().unwrap();
 
     let mut count = 0;

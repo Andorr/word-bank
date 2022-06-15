@@ -1,4 +1,7 @@
-use lib::{Translation, Word, WordBankClient, WordType, mongo::load_options_from_env};
+use lib::{
+    mongo::{load_options_from_env, MongoDBClient},
+    Translation, Word, WordBankClient, WordType,
+};
 
 extern crate dotenv;
 
@@ -7,7 +10,7 @@ fn test_client_insert_words() {
     dotenv::dotenv().ok();
 
     let options = load_options_from_env().unwrap();
-    let client = WordBankClient::from_mongo(options).unwrap();
+    let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
 
     let mut word = Word::from_value("살다");
     word.kind = WordType::VERB;

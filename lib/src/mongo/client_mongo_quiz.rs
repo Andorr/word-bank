@@ -1,14 +1,14 @@
 use chrono::Utc;
 use uuid::Uuid;
 
-use crate::{client::Context, quiz::QuizResult};
+use crate::quiz::QuizResult;
 
-use super::{models::QuizResultDBM, MongoDBClient};
+use super::{models::QuizResultDBM, MongoContext, MongoDBClient};
 
 impl MongoDBClient {
     pub fn handle_insert_quiz_result(
         &self,
-        ctx: &mut Context,
+        ctx: &mut MongoContext,
         result: &mut QuizResult,
     ) -> Result<Uuid, ()> {
         result.created_at = Utc::now();

@@ -1,4 +1,7 @@
-use lib::{PaginationOptions, WordBankClient, WordQueryOptions, WordType, mongo::load_options_from_env};
+use lib::{
+    mongo::{load_options_from_env, MongoDBClient},
+    PaginationOptions, WordBankClient, WordQueryOptions, WordType,
+};
 
 extern crate dotenv;
 
@@ -9,16 +12,19 @@ fn test_client_list_words() {
     dotenv::dotenv().ok();
 
     let options = load_options_from_env().unwrap();
-    let client = WordBankClient::from_mongo(options).unwrap();
+    let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
 
     let expected_word = "살다".to_string();
 
-    let result = client.query_words(WordQueryOptions{ 
-        query: Some(expected_word.clone()),
-        word: None, // Some(expected_word.clone()), 
-        kind: Some(WordType::VERB), 
-        tags: None 
-    }, PaginationOptions::new(2, 1));
+    let result = client.query_words(
+        WordQueryOptions {
+            query: Some(expected_word.clone()),
+            word: None, // Some(expected_word.clone()),
+            kind: Some(WordType::VERB),
+            tags: None,
+        },
+        PaginationOptions::new(2, 1),
+    );
     assert!(result.is_ok());
 
     let page_result = result.unwrap();

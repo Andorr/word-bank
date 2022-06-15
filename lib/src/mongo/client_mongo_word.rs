@@ -1,15 +1,15 @@
 use mongodb::bson::{doc, to_document, Bson, DateTime};
 use uuid::Uuid;
 
-use crate::{client::Context, Translation, Word, WordUpdateOptions};
+use crate::{Translation, Word, WordUpdateOptions};
 
 use super::{
     models::{TranslationDBM, WordDBM},
-    MongoDBClient,
+    MongoContext, MongoDBClient,
 };
 
 impl MongoDBClient {
-    pub fn handle_insert_word(&self, ctx: &mut Context, word: &mut Word) -> Result<Uuid, ()> {
+    pub fn handle_insert_word(&self, ctx: &mut MongoContext, word: &mut Word) -> Result<Uuid, ()> {
         let wdbm: WordDBM = word.into();
 
         let collection = self.word_collection();
@@ -48,7 +48,7 @@ impl MongoDBClient {
         }
     }
 
-    pub fn handle_delete_word(&self, ctx: &mut Context, word_id: Uuid) -> Result<(), ()> {
+    pub fn handle_delete_word(&self, ctx: &mut MongoContext, word_id: Uuid) -> Result<(), ()> {
         // Delete both the word and its related translations
         let word_col = self.word_collection();
         let result_word_delete = word_col.delete_one_with_session(
@@ -107,7 +107,11 @@ impl MongoDBClient {
         }
     }
 
-    pub fn handle_get_random_words(&self, ctx: &mut Context, count: u32) -> Result<Vec<Word>, ()> {
+    pub fn handle_get_random_words(
+        &self,
+        ctx: &mut MongoContext,
+        count: u32,
+    ) -> Result<Vec<Word>, ()> {
         let collection = self.word_collection();
         let mut result = match collection.aggregate_with_session(
             vec![doc! {

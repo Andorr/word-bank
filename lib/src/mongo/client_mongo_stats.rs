@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use bson::doc;
 
-use crate::{client::Context, models::stats::UserStatistics};
+use crate::models::stats::UserStatistics;
 
-use super::MongoDBClient;
+use super::{MongoContext, MongoDBClient};
 
 impl MongoDBClient {
-    pub fn handle_get_user_statistics(&self, ctx: &mut Context) -> Result<UserStatistics, ()> {
+    pub fn handle_get_user_statistics(&self, ctx: &mut MongoContext) -> Result<UserStatistics, ()> {
         // Get word statistics
         let word_kind_result = self.word_collection().aggregate_with_session(
             vec![doc! {

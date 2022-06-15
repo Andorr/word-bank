@@ -8,32 +8,43 @@ use crate::{
         FolderUpdateOptions, PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions,
     },
     mongo::{DBOptions, MongoContext, MongoDBClient},
+    psql::{PgContext, PgDBClient},
     quiz::QuizResult,
     DB,
 };
 
 const PAGINATION_LIMIT: usize = 10000;
 
-pub type Context = MongoContext;
+// pub type Context = PgContext;
 // pub type Context = Box<dyn WordBankContext>;
 
 #[derive(Clone)]
-pub struct WordBankClient {
-    db: MongoDBClient,
+pub struct WordBankClient<T: DB> {
+    db: T,
 }
 
-impl WordBankClient {
-    pub fn from_mongo(options: DBOptions) -> Result<WordBankClient, ()> {
+impl WordBankClient<MongoDBClient> {
+    pub fn new(options: DBOptions) -> Result<WordBankClient<MongoDBClient>, ()> {
         let client = MongoDBClient::from_options(&options)?;
         let wbclient = WordBankClient { db: client };
         Ok(wbclient)
     }
+}
 
-    pub fn new_context(&self) -> Result<Context, ()> {
+impl WordBankClient<PgDBClient> {
+    pub fn new(options: DBOptions) -> Result<WordBankClient<PgDBClient>, ()> {
+        let client = PgDBClient::new(&options.uri)?;
+        let wbclient = WordBankClient { db: client };
+        Ok(wbclient)
+    }
+}
+
+impl<T: DB> WordBankClient<T> {
+    pub fn new_context(&self) -> Result<T::Context, ()> {
         self.db.new_context()
     }
 
-    pub fn insert_word(&self, ctx: &mut Context, word: &mut Word) -> Result<Uuid, ()> {
+    pub fn insert_word(&self, ctx: &mut T::Context, word: &mut Word) -> Result<Uuid, ()> {
         let now = Utc::now();
         word.update_time(now);
 
@@ -52,7 +63,7 @@ impl WordBankClient {
         self.db.query_words(filter, pagination)
     }
 
-    pub fn delete_word(&self, ctx: &mut Context, word_id: Uuid) -> Result<(), ()> {
+    pub fn delete_word(&self, ctx: &mut T::Context, word_id: Uuid) -> Result<(), ()> {
         match self.db.delete_word(ctx, word_id) {
             Ok(_) => (),
             Err(_) => return Err(()),
@@ -100,11 +111,11 @@ impl WordBankClient {
         self.db.update_word(&update_options)
     }
 
-    pub fn get_random_words(&self, ctx: &mut Context, count: u32) -> Result<Vec<Word>, ()> {
+    pub fn get_random_words(&self, ctx: &mut T::Context, count: u32) -> Result<Vec<Word>, ()> {
         self.db.random_words(ctx, count)
     }
 
-    pub fn insert_folder(&self, ctx: &mut Context, folder: &mut Folder) -> Result<Uuid, ()> {
+    pub fn insert_folder(&self, ctx: &mut T::Context, folder: &mut Folder) -> Result<Uuid, ()> {
         let now = Utc::now();
         folder.update_time(now);
 
@@ -113,7 +124,7 @@ impl WordBankClient {
 
     pub fn query_folders(
         &self,
-        ctx: &mut Context,
+        ctx: &mut T::Context,
         filter: FolderQueryOptions,
         pagination: PaginationOptions,
     ) -> Result<PageResult<Folder>, ()> {
@@ -122,13 +133,13 @@ impl WordBankClient {
 
     pub fn update_folder(
         &self,
-        ctx: &mut Context,
+        ctx: &mut T::Context,
         update_options: FolderUpdateOptions,
     ) -> Result<(), ()> {
         self.db.update_folder(ctx, &update_options)
     }
 
-    pub fn delete_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<(), ()> {
+    pub fn delete_folder(&self, ctx: &mut T::Context, folder_id: Uuid) -> Result<(), ()> {
         let folder = match self.db.get_folder(ctx, folder_id) {
             Ok(f) => f,
             Err(_) => return Err(()),
@@ -158,13 +169,13 @@ impl WordBankClient {
         self.db.delete_folder(ctx, folder.id)
     }
 
-    pub fn get_folder(&self, ctx: &mut Context, folder_id: Uuid) -> Result<Folder, ()> {
+    pub fn get_folder(&self, ctx: &mut T::Context, folder_id: Uuid) -> Result<Folder, ()> {
         self.db.get_folder(ctx, folder_id)
     }
 
     pub fn get_folder_content(
         &self,
-        ctx: &mut Context,
+        ctx: &mut T::Context,
         folder: &Folder,
     ) -> Result<FolderContent, ()> {
         let folders = match self.db.query_folders(
@@ -192,7 +203,7 @@ impl WordBankClient {
         })
     }
 
-    pub fn initialize_quiz(&self, ctx: &mut Context, options: &QuizOptions) -> Result<Quiz, ()> {
+    pub fn initialize_quiz(&self, ctx: &mut T::Context, options: &QuizOptions) -> Result<Quiz, ()> {
         let words = match &options.words.folders {
             Some(f_ids) => {
                 let word_ids: Vec<Uuid> = match self.db.query_folders(
@@ -232,13 +243,13 @@ impl WordBankClient {
 
     pub fn insert_quiz_result(
         &self,
-        ctx: &mut Context,
+        ctx: &mut T::Context,
         result: &mut QuizResult,
     ) -> Result<Uuid, ()> {
         self.db.insert_quiz_result(ctx, result)
     }
 
-    pub fn get_user_statistics(&self, ctx: &mut Context) -> Result<UserStatistics, ()> {
+    pub fn get_user_statistics(&self, ctx: &mut T::Context) -> Result<UserStatistics, ()> {
         self.db.get_user_statistics(ctx)
     }
 }
