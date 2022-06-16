@@ -16,6 +16,8 @@ use std::convert::TryInto;
 pub struct WordTypePGType;
 
 #[derive(Debug, Clone, Copy, PartialEq, DbEnum)]
+#[PgType = "word_kind"]
+#[DbValueStyle = "SCREAMING_SNAKE_CASE"]
 pub enum WordType {
     NONE,
     NOUN,
