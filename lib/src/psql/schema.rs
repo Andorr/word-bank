@@ -19,13 +19,13 @@ table! {
 
 table! {
     use diesel::sql_types::*;
-    use crate::psql::models::WordTypeMapping;
+    use crate::psql::models::PgWordTypeMapping;
     words (id) {
         id -> Uuid,
         word -> Varchar,
-        kind -> WordTypeMapping,
+        kind -> PgWordTypeMapping,
         tags -> Array<Text>,
-        translations -> Array<crate::psql::models::TranslationEntry>,
+        translations -> Array<crate::psql::models::PgTranslationEntry>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

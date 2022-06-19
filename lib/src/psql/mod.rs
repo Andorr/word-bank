@@ -1,3 +1,4 @@
+mod client_pg_word;
 mod context;
 pub mod models;
 pub mod schema;
@@ -24,29 +25,29 @@ mod tests {
     use chrono::Utc;
     use diesel::prelude::*;
 
-    use super::models::{Translation, WordType};
+    use super::models::{PgTranslation, PgWordType};
 
-    use super::models::Word;
+    use super::models::PgWord;
 
     use super::schema::words::dsl::*;
     use super::*;
 
-    fn create_word(conn: &PgConnection) -> Word {
+    fn create_word(conn: &PgConnection) -> PgWord {
         use super::schema::words::dsl::*;
 
         let time = Utc::now();
 
-        let new_word = Word {
+        let new_word = PgWord {
             id: uuid::Uuid::new_v4(),
             word: "나뉘다".to_string(),
-            kind: WordType::VERB,
+            kind: PgWordType::VERB,
             tags: vec![],
             translations: vec![
-                Translation {
+                PgTranslation {
                     id: uuid::Uuid::new_v4(),
                     value: "To Divide".to_string(),
                 },
-                Translation {
+                PgTranslation {
                     id: uuid::Uuid::new_v4(),
                     value: "To Share".to_string(),
                 },
@@ -64,7 +65,7 @@ mod tests {
     #[test]
     fn it_works() {
         let conn = establish_connection();
-        let mut results: Vec<Word> = words
+        let mut results: Vec<PgWord> = words
             // .filter(word.like("S%"))
             .limit(5)
             .load(&conn)
