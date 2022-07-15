@@ -14,9 +14,12 @@ fn test_client_list_words() {
     let options = load_options_from_env().unwrap();
     let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
 
+    let mut ctx = client.new_context().unwrap();
+
     let expected_word = "살다".to_string();
 
     let result = client.query_words(
+        &mut ctx,
         WordQueryOptions {
             query: Some(expected_word.clone()),
             word: None, // Some(expected_word.clone()),

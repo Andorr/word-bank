@@ -7,8 +7,8 @@ use crate::{
         quiz::Quiz, quiz::QuizOptions, stats::UserStatistics, FolderContent, FolderQueryOptions,
         FolderUpdateOptions, PageResult, PaginationOptions, WordQueryOptions, WordUpdateOptions,
     },
-    mongo::{DBOptions, MongoContext, MongoDBClient},
-    psql::{PgContext, PgDBClient},
+    mongo::{DBOptions, MongoDBClient},
+    psql::PgDBClient,
     quiz::QuizResult,
     DB,
 };
@@ -57,10 +57,11 @@ impl<T: DB> WordBankClient<T> {
 
     pub fn query_words(
         &self,
+        ctx: &mut T::Context,
         filter: WordQueryOptions,
         pagination: PaginationOptions,
     ) -> Result<PageResult<Word>, ()> {
-        self.db.query_words(filter, pagination)
+        self.db.query_words(ctx, filter, pagination)
     }
 
     pub fn delete_word(&self, ctx: &mut T::Context, word_id: Uuid) -> Result<(), ()> {
@@ -107,8 +108,12 @@ impl<T: DB> WordBankClient<T> {
         results
     }
 
-    pub fn update_word(&self, update_options: WordUpdateOptions) -> Result<(), ()> {
-        self.db.update_word(&update_options)
+    pub fn update_word(
+        &self,
+        ctx: &mut T::Context,
+        update_options: WordUpdateOptions,
+    ) -> Result<Word, ()> {
+        self.db.update_word(ctx, &update_options)
     }
 
     pub fn get_random_words(&self, ctx: &mut T::Context, count: u32) -> Result<Vec<Word>, ()> {
@@ -192,7 +197,7 @@ impl<T: DB> WordBankClient<T> {
             Err(_) => return Err(()),
         };
 
-        let words = match self.db.get_words(folder.words.clone()) {
+        let words = match self.db.get_words(ctx, folder.words.clone()) {
             Ok(words) => words,
             Err(_) => return Err(()),
         };
@@ -220,7 +225,7 @@ impl<T: DB> WordBankClient<T> {
                     Err(_) => return Err(()),
                 };
 
-                match self.db.get_words(word_ids) {
+                match self.db.get_words(ctx, word_ids) {
                     Ok(f) => f,
                     Err(_) => return Err(()),
                 }

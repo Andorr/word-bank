@@ -127,6 +127,8 @@ fn list_words(cfg: &Config, matches: &ArgMatches) {
 
     let client = WordBankClient::<MongoDBClient>::new(options).unwrap();
 
+    let mut context = client.new_context().unwrap();
+
     let limit = matches
         .value_of("limit")
         .unwrap()
@@ -146,7 +148,11 @@ fn list_words(cfg: &Config, matches: &ArgMatches) {
     print!("Loading...");
     std::io::stdout().flush().unwrap();
     let result = client
-        .query_words(query_options, PaginationOptions::new(limit, page))
+        .query_words(
+            &mut context,
+            query_options,
+            PaginationOptions::new(limit, page),
+        )
         .expect("was not able to list errors");
     print!("\r");
 

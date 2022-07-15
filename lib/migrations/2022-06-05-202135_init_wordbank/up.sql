@@ -1,5 +1,6 @@
 -- For installing necessary uuid functions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS tsm_system_rows ;
 
 CREATE TYPE translation AS (
     id uuid,

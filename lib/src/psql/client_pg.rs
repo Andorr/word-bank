@@ -3,12 +3,14 @@ use diesel::{
     r2d2::{self, ConnectionManager, Error, Pool, PooledConnection},
 };
 
-use crate::DB;
+use r2d2_postgres::{postgres::NoTls, PostgresConnectionManager};
+
+use crate::{Word, DB};
 
 use super::context::PgContext;
 
-pub type PgPool = Pool<ConnectionManager<PgConnection>>;
-pub type PgPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
+pub type PgPool = Pool<PostgresConnectionManager<NoTls>>;
+pub type PgPooledConnection = PooledConnection<PostgresConnectionManager<NoTls>>;
 
 #[derive(Clone)]
 pub struct PgDBClient {
@@ -17,15 +19,15 @@ pub struct PgDBClient {
 
 impl PgDBClient {
     pub fn new(database_url: &str) -> Result<PgDBClient, ()> {
-        match PgDBClient::new_db_pool(database_url) {
-            Ok(pool) => Ok(PgDBClient { pool }),
-            Err(_) => Err(()),
-        }
-    }
+        let manager = PostgresConnectionManager::new(database_url.parse().unwrap(), NoTls);
 
-    fn new_db_pool(database_url: &str) -> Result<PgPool, r2d2::PoolError> {
-        let manager = ConnectionManager::<PgConnection>::new(database_url);
-        Pool::builder().build(manager)
+        match r2d2::Pool::new(manager) {
+            Ok(pool) => Ok(PgDBClient { pool }),
+            Err(err) => {
+                println!("{:?}", err);
+                Err(())
+            }
+        }
     }
 }
 
@@ -39,6 +41,7 @@ impl DB for PgDBClient {
                 return Err(());
             }
         };
+
         let context = PgContext { conn: conn };
         Ok(context)
     }
@@ -48,35 +51,36 @@ impl DB for PgDBClient {
         ctx: &mut Self::Context,
         word: &mut crate::Word,
     ) -> Result<uuid::Uuid, ()> {
-        todo!()
-    }
-
-    fn insert_translation(
-        &self,
-        word_id: String,
-        translation: &mut crate::Translation,
-    ) -> Result<uuid::Uuid, ()> {
-        todo!()
+        self.handle_insert_word(ctx, word)
     }
 
     fn query_words(
         &self,
+        ctx: &mut Self::Context,
         query_options: crate::WordQueryOptions,
         pagination: crate::PaginationOptions,
     ) -> Result<crate::PageResult<crate::Word>, ()> {
-        todo!()
+        self.handle_query_words(ctx, &query_options, &pagination)
     }
 
     fn delete_word(&self, ctx: &mut Self::Context, word_id: uuid::Uuid) -> Result<(), ()> {
-        todo!()
+        self.handle_delete_word(ctx, word_id)
     }
 
-    fn update_word(&self, update_options: &crate::WordUpdateOptions) -> Result<(), ()> {
-        todo!()
+    fn update_word(
+        &self,
+        ctx: &mut Self::Context,
+        update_options: &crate::WordUpdateOptions,
+    ) -> Result<Word, ()> {
+        self.handle_update_word(ctx, update_options)
     }
 
-    fn get_words(&self, ids: Vec<uuid::Uuid>) -> Result<Vec<crate::Word>, ()> {
-        todo!()
+    fn get_words(
+        &self,
+        ctx: &mut Self::Context,
+        ids: Vec<uuid::Uuid>,
+    ) -> Result<Vec<crate::Word>, ()> {
+        self.handle_get_words(ctx, ids)
     }
 
     fn insert_folder(

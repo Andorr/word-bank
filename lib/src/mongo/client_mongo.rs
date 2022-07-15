@@ -81,16 +81,9 @@ impl DB for MongoDBClient {
         self.handle_insert_word(ctx, word)
     }
 
-    fn insert_translation(
-        &self,
-        word_id: String,
-        translation: &mut Translation,
-    ) -> Result<Uuid, ()> {
-        self.handle_insert_translation(word_id, translation)
-    }
-
     fn query_words(
         &self,
+        ctx: &mut Self::Context,
         query_options: WordQueryOptions,
         pagination: PaginationOptions,
     ) -> Result<PageResult<Word>, ()> {
@@ -134,12 +127,16 @@ impl DB for MongoDBClient {
         self.handle_delete_word(ctx, word_id)
     }
 
-    fn update_word(&self, update_options: &WordUpdateOptions) -> Result<(), ()> {
-        self.handle_update_word(update_options)
+    fn update_word(
+        &self,
+        ctx: &mut Self::Context,
+        update_options: &WordUpdateOptions,
+    ) -> Result<Word, ()> {
+        self.handle_update_word(ctx, update_options)
     }
 
-    fn get_words(&self, ids: Vec<Uuid>) -> Result<Vec<Word>, ()> {
-        self.handle_get_words(ids)
+    fn get_words(&self, ctx: &mut Self::Context, ids: Vec<Uuid>) -> Result<Vec<Word>, ()> {
+        self.handle_get_words(ctx, ids)
     }
 
     fn random_words(&self, ctx: &mut Self::Context, count: u32) -> Result<Vec<Word>, ()> {

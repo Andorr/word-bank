@@ -12,19 +12,20 @@ pub trait DB {
 
     fn new_context(&self) -> Result<Self::Context, ()>;
     fn insert_word(&self, ctx: &mut Self::Context, word: &mut Word) -> Result<Uuid, ()>;
-    fn insert_translation(
-        &self,
-        word_id: String,
-        translation: &mut Translation,
-    ) -> Result<Uuid, ()>;
+
     fn query_words(
         &self,
+        ctx: &mut Self::Context,
         query_options: WordQueryOptions,
         pagination: PaginationOptions,
     ) -> Result<PageResult<Word>, ()>;
     fn delete_word(&self, ctx: &mut Self::Context, word_id: Uuid) -> Result<(), ()>;
-    fn update_word(&self, update_options: &WordUpdateOptions) -> Result<(), ()>;
-    fn get_words(&self, ids: Vec<Uuid>) -> Result<Vec<Word>, ()>;
+    fn update_word(
+        &self,
+        ctx: &mut Self::Context,
+        update_options: &WordUpdateOptions,
+    ) -> Result<Word, ()>;
+    fn get_words(&self, ctx: &mut Self::Context, ids: Vec<Uuid>) -> Result<Vec<Word>, ()>;
 
     fn insert_folder(&self, ctx: &mut Self::Context, folder: &mut Folder) -> Result<Uuid, ()>;
     fn delete_folder(&self, ctx: &mut Self::Context, folder_id: Uuid) -> Result<(), ()>;

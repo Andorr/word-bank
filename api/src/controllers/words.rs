@@ -23,10 +23,13 @@ pub async fn list(req: Request<State>) -> tide::Result {
     let state = req.state();
     let client = &state.client;
 
+    let mut context = client.new_context().unwrap();
+
     let word_query_options = req.query::<WordQueryOptions>()?;
     let pagination_options = req.query::<PaginationOptionalOptions>()?;
 
     let res = match client.query_words(
+        &mut context,
         word_query_options,
         pagination_options.to_pagination_options(),
     ) {
@@ -127,6 +130,8 @@ pub async fn update(mut req: Request<State>) -> tide::Result {
     let state = req.state();
     let client = &state.client;
 
+    let mut context = client.new_context().unwrap();
+
     let word_update_options = WordUpdateOptions {
         id: word_id,
         word: Some(update_options.value),
@@ -141,7 +146,7 @@ pub async fn update(mut req: Request<State>) -> tide::Result {
         ),
     };
 
-    let response = match client.update_word(word_update_options) {
+    let response = match client.update_word(&mut context, word_update_options) {
         Ok(_) => Response::builder(204).build(),
         Err(_) => err_server_error(),
     };

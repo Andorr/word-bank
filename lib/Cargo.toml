@@ -16,6 +16,9 @@ uuid = { version = "0.8", features = ["serde", "v4"] }
 dotenv = "0.15.0"
 diesel = { version = "1.4.4", features = ["postgres", "uuidv07", "chrono", "r2d2"] }
 diesel-derive-enum = { version = "1", features = ["postgres"] }
+r2d2_postgres = { version = "0.18.1" }
+postgres = { version = "0.19", features = ["with-uuid-0_8", "with-chrono-0_4"] }
+postgres-types = { version = "0.2.3", features = ["derive"] }
 
 [dependencies.mongodb]
 version = "2.1.0"

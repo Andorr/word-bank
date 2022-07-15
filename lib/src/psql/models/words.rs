@@ -1,4 +1,7 @@
-use crate::{psql::schema::words, Translation, Word, WordType};
+use crate::{
+    psql::sqlbuilder::{Insertable, Value},
+    Translation, Word, WordType,
+};
 
 use chrono::{DateTime, Utc};
 use diesel::{
@@ -6,16 +9,18 @@ use diesel::{
     pg::Pg,
     serialize::{self, Output},
     sql_types,
-    types::{FromSql, IsNull, ToSql},
+    // types::{FromSql, IsNull, ToSql},
     Queryable,
 };
 use diesel_derive_enum::DbEnum;
+use postgres_types::{FromSql, ToSql};
+use r2d2_postgres::postgres::Row;
 
 use std::convert::TryInto;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, DbEnum)]
-#[PgType = "word_kind"]
-#[DbValueStyle = "SCREAMING_SNAKE_CASE"]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromSql, ToSql)]
+// #[PgType = "word_kind"]
+// #[DbValueStyle = "SCREAMING_SNAKE_CASE"]
 pub enum PgWordType {
     NONE,
     NOUN,
@@ -30,8 +35,15 @@ pub enum PgWordType {
     OTHER,
 }
 
-impl From<PgWordType> for WordType {
-    fn from(pg_word_type: PgWordType) -> Self {
+impl std::fmt::Display for PgWordType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let w: WordType = self.into();
+        std::fmt::Debug::fmt(&w, f)
+    }
+}
+
+impl From<&PgWordType> for WordType {
+    fn from(pg_word_type: &PgWordType) -> Self {
         match pg_word_type {
             PgWordType::NONE => WordType::NONE,
             PgWordType::NOUN => WordType::NOUN,
@@ -66,8 +78,13 @@ impl From<WordType> for PgWordType {
     }
 }
 
-#[derive(Queryable, Identifiable, Insertable, Debug)]
-#[table_name = "words"]
+// impl<'a> From<PgWordType> for &'a Value {
+//     fn from(pg_word_type: PgWordType) -> Self {
+//         &pg_word_type.to_string()
+//     }
+// }
+
+#[derive(Debug)]
 pub struct PgWord {
     pub id: uuid::Uuid,
     pub word: String,
@@ -97,12 +114,52 @@ impl From<&PgWord> for Word {
         Word {
             id: pg_word.id,
             value: pg_word.word.clone(),
-            kind: pg_word.kind.clone().into(),
+            kind: (&pg_word.kind).into(),
             tags: pg_word.tags.clone(),
             translations: pg_word.translations.iter().map(|t| t.into()).collect(),
             created_at: DateTime::<Utc>::from_utc(pg_word.created_at.into(), Utc),
             updated_at: DateTime::<Utc>::from_utc(pg_word.updated_at.into(), Utc),
         }
+    }
+}
+
+impl From<&Row> for PgWord {
+    fn from(row: &Row) -> Self {
+        PgWord {
+            id: row.get(0),
+            word: row.get(1),
+            kind: row.get(2),
+            tags: row.get(3),
+            translations: row.get(4),
+            created_at: row.get(5),
+            updated_at: row.get(6),
+        }
+    }
+}
+
+impl Insertable for PgWord {
+    fn columns(&self) -> Vec<&str> {
+        vec![
+            "id",
+            "word",
+            "kind",
+            "tags",
+            "translations",
+            "created_at",
+            "updated_at",
+        ]
+    }
+
+    fn values(&self) -> Vec<Value> {
+        vec![
+            Box::new(self.id),
+            Box::new(self.word.clone()),
+            Box::new(self.kind),
+            Box::new(self.tags.clone()),
+            Box::new(self.translations.clone()),
+            Box::new(self.created_at),
+            Box::new(self.updated_at),
+        ]
     }
 }
 
@@ -118,7 +175,7 @@ pub struct PgFolder {
 #[derive(Debug, SqlType)]
 #[postgres(type_name = "Translation")]
 pub struct PgTranslationEntry;
-#[derive(Debug, FromSqlRow, AsExpression)]
+#[derive(Debug, AsExpression, FromSql, ToSql, Clone)]
 #[sql_type = "PgTranslationEntry"]
 pub struct PgTranslation {
     pub id: uuid::Uuid,
@@ -143,7 +200,7 @@ impl From<&PgTranslation> for Translation {
     }
 }
 
-impl ToSql<PgTranslationEntry, Pg> for PgTranslation {
+/* impl ToSql<PgTranslationEntry, Pg> for PgTranslation {
     fn to_sql<W: std::io::Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         // Steps to write a custom type:
         // 1. Write the number of fields in the tuple
@@ -169,9 +226,9 @@ impl ToSql<PgTranslationEntry, Pg> for PgTranslation {
         // This can potentially be replaced with WriteTuple instead. Did not get it to work though :(
         // WriteTuple::<(uuid::Uuid, &str)>::write_tuple(&(self.id, self.value.as_str()), out)
     }
-}
+} */
 
-impl FromSql<PgTranslationEntry, Pg> for PgTranslation {
+/* impl FromSql<PgTranslationEntry, Pg> for PgTranslation {
     fn from_sql(
         bytes: Option<&<Pg as diesel::backend::Backend>::RawValue>,
     ) -> deserialize::Result<Self> {
@@ -181,7 +238,7 @@ impl FromSql<PgTranslationEntry, Pg> for PgTranslation {
             FromSql::<sql_types::VarChar, Pg>::from_sql(Some(values[1].as_slice()))?;
         Ok(PgTranslation { id, value })
     }
-}
+} */
 
 trait FromSQLTuple {
     fn bytes_from_sql_tuple(&self) -> Vec<Vec<u8>>;
