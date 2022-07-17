@@ -1,0 +1,50 @@
+package pg
+
+import (
+	"fmt"
+	"testing"
+	"wordbank/pkg/wordbank/models"
+
+	"github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestQueryBuilder(t *testing.T) {
+
+	qb := NewQuery("words").
+		CrossJoin("UNNEST(translations) as t").
+		WhereGroup(func(c *condition) {
+			c.Where("value SIMILAR TO '%?%'", "query").
+				WhereOr("t.value SIMILAR TO '%?%'", "query")
+		}).
+		WhereOr("class = ?", models.WordClassNoun).
+		WhereOr("tags @> ?", pq.Array([]string{"hello"})).
+		WhereOr("value = ?", "word")
+
+	qbCount := qb.Count("*")
+
+	qb = qb.Limit(10).Offset(10)
+
+	query, params := qb.Build()
+
+	expectedWhere := "WHERE (value SIMILAR TO '%$1%' OR t.value SIMILAR TO '%$2%') OR class = $3 OR tags @> $4 OR value = $5"
+
+	assert.Equal(t, fmt.Sprintf("SELECT * FROM words, UNNEST(translations) as t %s OFFSET 10 LIMIT 10", expectedWhere), query)
+	if assert.Equal(t, 5, len(params)) {
+		assert.Equal(t, "query", params[0])
+		assert.Equal(t, "query", params[1])
+		assert.Equal(t, models.WordClassNoun, params[2])
+		assert.Equal(t, pq.Array([]string{"hello"}), params[3])
+		assert.Equal(t, "word", params[4])
+	}
+
+	query, params = qbCount.Build()
+	assert.Equal(t, fmt.Sprintf("SELECT COUNT(*) FROM words, UNNEST(translations) as t %s", expectedWhere), query)
+	if assert.Equal(t, 5, len(params)) {
+		assert.Equal(t, "query", params[0])
+		assert.Equal(t, "query", params[1])
+		assert.Equal(t, models.WordClassNoun, params[2])
+		assert.Equal(t, pq.Array([]string{"hello"}), params[3])
+		assert.Equal(t, "word", params[4])
+	}
+}

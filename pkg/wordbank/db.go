@@ -9,7 +9,7 @@ import (
 type DBStore interface {
 	// Word
 	InsertWord(word *models.Word) error
-	QueryWords(word models.WordQueryOptions) (*models.PageResult[models.Word], error)
+	QueryWords(word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[models.Word], error)
 	UpdateWord(updateOptions models.WordUpdateOptions) (*models.Word, error)
 	DeleteWord(id uuid.UUID) error
 	GetWordsByIds(ids []uuid.UUID) ([]*models.Word, error)
@@ -17,7 +17,7 @@ type DBStore interface {
 
 	// Folders
 	InsertFolder(folder *models.Folder) error
-	QueryFolders(folder models.FolderQueryOptions) (*models.PageResult[models.Folder], error)
+	QueryFolders(folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[models.Folder], error)
 	UpdateFolder(updateOptions models.FolderUpdateOptions) (*models.Folder, error)
 	DeleteFolder(id uuid.UUID) error
 	GetFolder(id uuid.UUID) (*models.Folder, error)

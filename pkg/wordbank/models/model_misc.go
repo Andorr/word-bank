@@ -6,3 +6,8 @@ type PageResult[T any] struct {
 	Count   int `json:"count"`
 	Results []T `json:"results"`
 }
+
+type PaginationOptions struct {
+	Page  int `json:"page"`
+	Limit int `json:"limit"`
+}

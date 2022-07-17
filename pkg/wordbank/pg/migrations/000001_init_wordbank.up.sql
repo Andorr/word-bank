@@ -7,7 +7,7 @@ CREATE TYPE translation AS (
     value varchar(255)
 );
 
-CREATE TYPE word_kind AS ENUM (
+CREATE TYPE word_class AS ENUM (
     'NONE',
     'NOUN',
     'PRONOUN',
@@ -23,9 +23,9 @@ CREATE TYPE word_kind AS ENUM (
 
 CREATE TABLE words (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    word varchar(255) NOT NULL,
+    value varchar(255) NOT NULL,
 
-    kind word_kind NOT NULL DEFAULT 'NONE',
+    class word_class NOT NULL DEFAULT 'NONE',
     tags text[] NOT NULL DEFAULT '{}',
     translations translation[] NOT NULL DEFAULT '{}',
 
