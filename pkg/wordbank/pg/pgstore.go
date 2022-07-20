@@ -6,6 +6,7 @@ import (
 	"wordbank/pkg/util/arrayutil"
 	"wordbank/pkg/wordbank/models"
 	pgmodels "wordbank/pkg/wordbank/pg/models"
+	"wordbank/pkg/wordbank/pg/utils"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -44,22 +45,22 @@ func (c *PgDBStore) QueryWords(options models.WordQueryOptions, pagination *mode
 		CrossJoin("UNNEST(translations) as t")
 
 	if options.Query != nil {
-		qb = qb.WhereOr("value SIMILAR TO '%?%'", *options.Query)
-		qb = qb.WhereOr("t.value SIMILAR TO '%?%'", *options.Query)
+		qb = qb.WhereOr("w.value SIMILAR TO ?", "%"+*options.Query+"%")
+		qb = qb.WhereOr("t.value SIMILAR TO ?", "%"+*options.Query+"%")
 	}
 	if options.Class != nil {
-		qb = qb.WhereOr("class = ?", *options.Class)
+		qb = qb.WhereOr("w.class = ?", *options.Class)
 	}
 	if options.Tags != nil {
-		qb = qb.WhereOr("tags @> ?", pq.Array(options.Tags))
+		qb = qb.WhereOr("w.tags @> ?", pq.Array(options.Tags))
 	}
 	if options.Word != nil {
-		qb = qb.WhereOr("value = ?", options.Word)
+		qb = qb.WhereOr("w.value = ?", options.Word)
 	}
 
 	countQb := qb.Count("*")
 
-	if pagination != nil {
+	if pagination != nil && pagination.NotEmpty() {
 		qb = qb.Limit(pagination.Limit).Offset(pagination.Page * pagination.Limit)
 	}
 
@@ -89,11 +90,45 @@ func (c *PgDBStore) QueryWords(options models.WordQueryOptions, pagination *mode
 }
 
 func (c *PgDBStore) UpdateWord(updateOptions models.WordUpdateOptions) (*models.Word, error) {
-	return nil, nil
+
+	qb := Update("words")
+
+	if updateOptions.Word != nil {
+		qb = qb.Set("value", *updateOptions.Word)
+	}
+	if updateOptions.Class != nil {
+		qb = qb.Set("class", *updateOptions.Class)
+	}
+	if updateOptions.Tags != nil {
+		qb = qb.Set("tags", pq.Array(updateOptions.Tags))
+	}
+	if updateOptions.Translations != nil {
+		qb = qb.Set("translations", pq.Array(arrayutil.Map(updateOptions.Translations, func(t *models.Translation) pgmodels.PgTranslation {
+			return pgmodels.PgTranslation{
+				ID:  t.ID,
+				Val: t.Value,
+			}
+		})))
+	}
+
+	qb = qb.Where("id = ?", updateOptions.ID).
+		Set("updated_at", "now()").
+		Returning("*")
+
+	query, params := qb.Build()
+
+	var word pgmodels.PgWord
+	err := c.DB.QueryRowx(query, params...).
+		StructScan(&word)
+
+	return word.ToWord(), err
 }
 
 func (c *PgDBStore) DeleteWord(id uuid.UUID) error {
-	return nil
+	query, params := Delete("words").Where("id = ?", id).Build()
+
+	_, err := c.DB.Exec(query, params...)
+	return err
 }
 
 func (c *PgDBStore) GetWordsByIds(ids []uuid.UUID) ([]*models.Word, error) {
@@ -109,38 +144,142 @@ func (c *PgDBStore) GetWordsByIds(ids []uuid.UUID) ([]*models.Word, error) {
 	}
 
 	return arrayutil.Map(words, func(w *pgmodels.PgWord) *models.Word {
-		var result models.Word
-		return w.IntoWord(&result)
+		return w.ToWord()
 	}), err
 }
 
 func (c *PgDBStore) RandomWords(count int) ([]*models.Word, error) {
-	return nil, nil
+	var words []*pgmodels.PgWord
+	err := c.DB.Select(&words, "SELEC * FROM words ORDER BY RANDOM() LIMIT ?", count)
+	if err != nil {
+		return nil, err
+	}
+
+	return arrayutil.Map(words, func(w *pgmodels.PgWord) *models.Word {
+		return w.ToWord()
+	}), nil
 }
 
 // ------ FOLDERS ------
 func (c *PgDBStore) InsertFolder(folder *models.Folder) error {
-	return nil
+	f := pgmodels.PgFolderFrom(folder)
+
+	err := c.DB.
+		QueryRowx("INSERT INTO folders (name, parent, words) VALUES ($1, $2, $3) RETURNING *",
+			f.Name, f.Parent, f.Words).
+		StructScan(&f)
+
+	if err == nil {
+		f.IntoFolder(folder)
+	}
+	return err
+
 }
 
 func (c *PgDBStore) QueryFolders(folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[models.Folder], error) {
-	return nil, nil
+
+	qb := NewQuery("folders as f")
+
+	if folder.Query != nil {
+		qb = qb.WhereOr("f.name SIMILAR TO ?", "%"+*folder.Query+"%")
+	}
+	if folder.Parent != nil {
+		qb = qb.WhereOr("f.parent = ?", *folder.Parent)
+	}
+	if folder.Words != nil {
+		qb = qb.WhereOr("f.words @> ?", pq.Array(folder.Words))
+	}
+
+	countQb := qb.Count("*")
+
+	if pagination != nil && pagination.NotEmpty() {
+		qb = qb.Limit(pagination.Limit).Offset(pagination.Page * pagination.Limit)
+	}
+
+	query, params := qb.Build()
+	folders := make([]pgmodels.PgFolder, 0)
+	err := c.DB.Select(&folders, query, params...)
+	if err != nil {
+		return nil, err
+	}
+
+	query, params = countQb.Build()
+	var count int
+	err = c.DB.QueryRowx(query, params...).Scan(&count)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.PageResult[models.Folder]{
+		Total: count,
+		Page:  pagination.Page,
+		Count: len(folders),
+		Results: arrayutil.Map(folders, func(f pgmodels.PgFolder) models.Folder {
+			return *f.ToFolder()
+		}),
+	}, nil
 }
 
 func (c *PgDBStore) UpdateFolder(updateOptions models.FolderUpdateOptions) (*models.Folder, error) {
-	return nil, nil
+
+	var folder pgmodels.PgFolder
+	err := utils.RunTx(c.DB, func(tx *sqlx.Tx) error {
+
+		err := tx.QueryRowx("SELECT * FROM folders WHERE id = ?", updateOptions.ID).StructScan(&folder)
+		if err != nil {
+			return err
+		}
+
+		qb := Update("folder")
+		if updateOptions.Name != nil {
+			qb = qb.Set("name", *updateOptions.Name)
+		}
+		if updateOptions.Parent != nil {
+			qb = qb.Set("parent", *updateOptions.Parent)
+		}
+		if len(updateOptions.Add) > 0 || len(updateOptions.Remove) > 0 {
+			words := folder.Words
+			if len(updateOptions.Add) > 0 {
+				words = append(words, updateOptions.Add...)
+			}
+			if len(updateOptions.Remove) > 0 {
+				words = arrayutil.Difference(words, updateOptions.Remove)
+			}
+
+			qb = qb.Set("words", pq.Array(words))
+		}
+
+		qb = qb.Where("id = ?", updateOptions.ID).
+			Set("updated_at", "now()").
+			Returning("*")
+
+		query, params := qb.Build()
+		return tx.QueryRowx(query, params...).
+			StructScan(&folder)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return folder.ToFolder(), nil
 }
 
 func (c *PgDBStore) DeleteFolder(id uuid.UUID) error {
-	return nil
+	query, params := Delete("folders").Where("id = ?", id).Build()
+
+	_, err := c.DB.Exec(query, params...)
+	return err
+
 }
 
 func (c *PgDBStore) GetFolder(id uuid.UUID) (*models.Folder, error) {
-	return nil, nil
-}
+	var folder pgmodels.PgFolder
+	err := c.DB.QueryRowx("SELECT * FROM folders WHERE id = ?", id).StructScan(&folder)
+	if err != nil {
+		return nil, err
+	}
 
-func (c *PgDBStore) GetFolderContent(id uuid.UUID) (*models.FolderContent, error) {
-	return nil, nil
+	return folder.ToFolder(), nil
 }
 
 type QueryLogger struct {

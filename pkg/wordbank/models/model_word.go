@@ -47,9 +47,9 @@ type WordQueryOptions struct {
 }
 
 type WordUpdateOptions struct {
-	ID          uuid.UUID
-	Word        *string
-	Class       *WordClass
-	Tags        []WordTag
-	Translation []*Translation
+	ID           uuid.UUID
+	Word         *string
+	Class        *WordClass
+	Tags         []WordTag
+	Translations []*Translation
 }

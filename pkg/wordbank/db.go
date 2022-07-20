@@ -21,5 +21,4 @@ type DBStore interface {
 	UpdateFolder(updateOptions models.FolderUpdateOptions) (*models.Folder, error)
 	DeleteFolder(id uuid.UUID) error
 	GetFolder(id uuid.UUID) (*models.Folder, error)
-	GetFolderContent(id uuid.UUID) (*models.FolderContent, error)
 }

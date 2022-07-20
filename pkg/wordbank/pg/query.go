@@ -176,20 +176,7 @@ func (q Query) Build() (string, []interface{}) {
 		query.WriteString(table.table)
 	}
 
-	if len(q.conditions) > 0 {
-		query.WriteString(" WHERE ")
-		for i, condition := range q.conditions {
-			if i > 0 {
-				if condition.op == opAND {
-					query.WriteString(" AND ")
-				} else {
-					query.WriteString(" OR ")
-				}
-			}
-			query.WriteString(condition.String())
-			params = append(params, condition.Params()...)
-		}
-	}
+	q.buildWhere(&query, &params)
 
 	if len(q.orderBy) > 0 {
 		query.WriteString(" ORDER BY ")
@@ -211,16 +198,152 @@ func (q Query) Build() (string, []interface{}) {
 		query.WriteString(strconv.Itoa(*q.limit))
 	}
 
-	queryString := query.String()
+	return rebind(query.String()), params
+}
+
+func (q *Query) buildWhere(query *strings.Builder, params *[]interface{}) {
+	if len(q.conditions) > 0 {
+		query.WriteString(" WHERE ")
+		for i, condition := range q.conditions {
+			if i > 0 {
+				if condition.op == opAND {
+					query.WriteString(" AND ")
+				} else {
+					query.WriteString(" OR ")
+				}
+			}
+			query.WriteString(condition.String())
+			*params = append(*params, condition.Params()...)
+		}
+	}
+}
+
+func rebind(query string) string {
 	n := 1
 	for {
-		if strings.Contains(queryString, "?") {
-			queryString = strings.Replace(queryString, "?", "$"+strconv.Itoa(n), 1)
+		if strings.Contains(query, "?") {
+			query = strings.Replace(query, "?", "$"+strconv.Itoa(n), 1)
 			n++
 		} else {
 			break
 		}
 	}
+	return query
+}
 
-	return queryString, params
+type KeyValue struct {
+	Key   string
+	Value interface{}
+}
+
+type UpdateQuery struct {
+	table string
+
+	columns []KeyValue
+
+	returning *string
+
+	query Query
+}
+
+func Update(table string) UpdateQuery {
+	return UpdateQuery{
+		table:   table,
+		columns: []KeyValue{},
+		query:   NewQuery(table),
+	}
+}
+
+func (u UpdateQuery) Set(key string, value interface{}) UpdateQuery {
+	u.columns = append(u.columns, KeyValue{key, value})
+	return u
+}
+
+func (u UpdateQuery) Where(where string, parameters ...interface{}) UpdateQuery {
+	u.query = u.query.Where(where, parameters...)
+	return u
+}
+
+func (u UpdateQuery) WhereOr(where string, parameters ...interface{}) UpdateQuery {
+	u.query = u.query.WhereOr(where, parameters...)
+	return u
+}
+
+func (u UpdateQuery) WhereGroup(fn func(c *condition)) UpdateQuery {
+	u.query = u.query.WhereGroup(fn)
+	return u
+}
+
+func (u UpdateQuery) Returning(column string) UpdateQuery {
+	u.returning = &column
+	return u
+}
+
+func (u UpdateQuery) Build() (string, []any) {
+	sb := strings.Builder{}
+	params := make([]any, 0)
+
+	sb.WriteString("UPDATE ")
+	sb.WriteString(u.table)
+
+	if len(u.columns) > 0 {
+		sb.WriteString(" SET ")
+		for i, column := range u.columns {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(column.Key)
+			sb.WriteString(" = ?")
+			params = append(params, column.Value)
+		}
+	}
+
+	u.query.buildWhere(&sb, &params)
+
+	if u.returning != nil {
+		sb.WriteString(" RETURNING ")
+		sb.WriteString(*u.returning)
+	}
+
+	return rebind(sb.String()), params
+}
+
+type DeleteQuery struct {
+	table string
+
+	query Query
+}
+
+func Delete(table string) DeleteQuery {
+	return DeleteQuery{
+		table: table,
+		query: NewQuery(table),
+	}
+}
+
+func (u DeleteQuery) Where(where string, parameters ...interface{}) DeleteQuery {
+	u.query = u.query.Where(where, parameters...)
+	return u
+}
+
+func (u DeleteQuery) WhereOr(where string, parameters ...interface{}) DeleteQuery {
+	u.query = u.query.WhereOr(where, parameters...)
+	return u
+}
+
+func (u DeleteQuery) WhereGroup(fn func(c *condition)) DeleteQuery {
+	u.query = u.query.WhereGroup(fn)
+	return u
+}
+
+func (u DeleteQuery) Build() (string, []any) {
+	sb := strings.Builder{}
+	params := make([]any, 0)
+
+	sb.WriteString("DELETE FROM ")
+	sb.WriteString(u.table)
+
+	u.query.buildWhere(&sb, &params)
+
+	return rebind(sb.String()), params
 }

@@ -9,12 +9,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type TestWBCreateWordSuite struct {
+type TestWBSuite struct {
 	suite.Suite
 	wb *WordBank
 }
 
-func (suite *TestWBCreateWordSuite) SetupTest() {
+func (suite *TestWBSuite) SetupTest() {
+
 	// Setup test
 	wb, err := NewWithPG(os.Getenv("TEST_DB_URI"))
 	if err != nil {
@@ -24,11 +25,11 @@ func (suite *TestWBCreateWordSuite) SetupTest() {
 	suite.wb = wb
 }
 
-func (suite *TestWBCreateWordSuite) TearDownTest() {
+func (suite *TestWBSuite) TearDownTest() {
 	// Tear down test
 }
 
-func (suite *TestWBCreateWordSuite) TestInsertWord() {
+func (suite *TestWBSuite) TestInsertWord() {
 	// Insert word
 
 	word := &models.Word{
@@ -59,6 +60,26 @@ func (suite *TestWBCreateWordSuite) TestInsertWord() {
 	suite.Assert().Equal(word, word2)
 }
 
+func (suite *TestWBSuite) TestWBQueryWords() {
+
+	query := "test"
+	class := models.WordClassNoun
+	words, err := suite.wb.Word.QueryWords(nil, models.WordQueryOptions{
+		Query: &query,
+		Class: &class,
+	}, &models.PaginationOptions{})
+	if err != nil {
+		suite.FailNowf("Error querying words", err.Error())
+		return
+	}
+	if suite.Assert().NotNil(words) {
+		for _, word := range words.Results {
+			suite.Assert().Equal(query, word.Value)
+			suite.Assert().Equal(class, word.Class)
+		}
+	}
+}
+
 func TestWordBankCreateWord(t *testing.T) {
-	suite.Run(t, new(TestWBCreateWordSuite))
+	suite.Run(t, new(TestWBSuite))
 }

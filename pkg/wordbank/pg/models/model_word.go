@@ -14,8 +14,8 @@ import (
 )
 
 type PgTranslation struct {
-	ID  uuid.UUID
-	Val string
+	ID  uuid.UUID `db:"id"`
+	Val string    `db:"value"`
 }
 
 func (t *PgTranslation) Value() (driver.Value, error) {
@@ -110,4 +110,8 @@ func (w *PgWord) IntoWord(word *models.Word) *models.Word {
 	word.CreatedAt = w.CreatedAt
 	word.UpdatedAt = w.UpdatedAt
 	return word
+}
+
+func (w *PgWord) ToWord() *models.Word {
+	return w.IntoWord(&models.Word{})
 }

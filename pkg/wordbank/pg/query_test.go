@@ -48,3 +48,19 @@ func TestQueryBuilder(t *testing.T) {
 		assert.Equal(t, "word", params[4])
 	}
 }
+
+func TestUpdateQuery(t *testing.T) {
+
+	query, params := Update("words").
+		Set("value", "new-value").
+		Set("class", models.WordClassNoun).
+		Where("value = ?", "old-value").
+		Build()
+
+	assert.Equal(t, "UPDATE words SET value = $1, class = $2 WHERE value = $3", query)
+	if assert.Equal(t, 3, len(params)) {
+		assert.Equal(t, "new-value", params[0])
+		assert.Equal(t, models.WordClassNoun, params[1])
+		assert.Equal(t, "old-value", params[2])
+	}
+}

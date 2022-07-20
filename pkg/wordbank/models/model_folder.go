@@ -7,10 +7,10 @@ import (
 )
 
 type Folder struct {
-	ID     uuid.UUID    `json:"id"`
-	Name   string       `json:"name"`
-	Parent *uuid.UUID   `json:"parent"`
-	Words  []*uuid.UUID `json:"words"`
+	ID     *uuid.UUID  `json:"id"`
+	Name   string      `json:"name"`
+	Parent *uuid.UUID  `json:"parent"`
+	Words  []uuid.UUID `json:"words"`
 
 	CreatedAt *time.Time `json:"createdAt"`
 	UpdatedAt *time.Time `json:"updatedAt"`

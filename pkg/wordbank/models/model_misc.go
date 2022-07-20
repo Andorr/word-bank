@@ -11,3 +11,7 @@ type PaginationOptions struct {
 	Page  int `json:"page"`
 	Limit int `json:"limit"`
 }
+
+func (p *PaginationOptions) NotEmpty() bool {
+	return p.Page >= 0 && p.Limit > 0
+}

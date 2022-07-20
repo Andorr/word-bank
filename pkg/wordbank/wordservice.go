@@ -57,7 +57,10 @@ func (c *WordServiceImpl) QueryFolders(ctx *WordBankContext, folder models.Folde
 func (c *WordServiceImpl) UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, error) {
 	return nil, nil
 }
-func (c *WordServiceImpl) DeleteFolder(ctx *WordBankContext, id uuid.UUID) error { return nil }
+func (c *WordServiceImpl) DeleteFolder(ctx *WordBankContext, id uuid.UUID) error {
+	// TODO: Check if folder is empty
+	return nil
+}
 func (c *WordServiceImpl) GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, error) {
 	return nil, nil
 }
