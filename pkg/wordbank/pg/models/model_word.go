@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"wordbank/pkg/util/arrayutil"
-	"wordbank/pkg/wordbank/models"
-	"wordbank/pkg/wordbank/pg/utils"
+
+	"github.com/Andorr/word-bank/pkg/arrayutil"
+	"github.com/Andorr/word-bank/pkg/wordbank/models"
+	"github.com/Andorr/word-bank/pkg/wordbank/pg/utils"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"

@@ -45,3 +45,11 @@ func Difference[T comparable](arr1 []T, arr2 []T) []T {
 	}
 	return o
 }
+
+func Flatten[T any](arr [][]T) []T {
+	o := make([]T, 0)
+	for _, value := range arr {
+		o = append(o, value...)
+	}
+	return o
+}

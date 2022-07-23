@@ -1,8 +1,10 @@
 package wordbank
 
 import (
-	"wordbank/pkg/wordbank/models"
-	"wordbank/pkg/wordbank/pg"
+	"context"
+
+	"github.com/Andorr/word-bank/pkg/wordbank/models"
+	"github.com/Andorr/word-bank/pkg/wordbank/pg"
 
 	_ "github.com/lib/pq"
 
@@ -12,6 +14,8 @@ import (
 
 type WordBank struct {
 	Word WordService
+
+	newContextHandler func(context.Context) (*WordBankContext, error)
 }
 
 func NewWithPG(connectionString string) (*WordBank, error) {
@@ -23,35 +27,42 @@ func NewWithPG(connectionString string) (*WordBank, error) {
 	dbStore := pg.NewDBStore(db)
 
 	return &WordBank{
-		Word: NewWordService(dbStore),
+		Word: NewPgWordService(dbStore),
+		newContextHandler: func(ctx context.Context) (*WordBankContext, error) {
+			pgContext, err := dbStore.NewContext(ctx)
+			return &WordBankContext{
+				pgContext: pgContext,
+			}, err
+		},
 	}, nil
+}
+
+func (wb *WordBank) NewContext(ctx context.Context) (*WordBankContext, error) {
+	return wb.newContextHandler(ctx)
 }
 
 type WordService interface {
 	// Words
-	InsertWord(ctx *WordBankContext, word *models.Word) error
-	QueryWords(ctx *WordBankContext, word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[models.Word], error)
-	GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Word, error)
-	UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, error)
-	DeleteWord(ctx *WordBankContext, id uuid.UUID) error
-	RandomWords(ctx *WordBankContext, count int) ([]*models.Word, error)
+	InsertWord(ctx *WordBankContext, word *models.Word) *WordBankError
+	QueryWords(ctx *WordBankContext, word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], *WordBankError)
+	GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Word, *WordBankError)
+	UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, *WordBankError)
+	DeleteWord(ctx *WordBankContext, id uuid.UUID) *WordBankError
+	RandomWords(ctx *WordBankContext, count int) ([]*models.Word, *WordBankError)
 
 	// Folders
-	InsertFolder(ctx *WordBankContext, folder *models.Folder) error
-	QueryFolders(ctx *WordBankContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[models.Folder], error)
-	UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, error)
-	DeleteFolder(ctx *WordBankContext, id uuid.UUID) error
-	GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, error)
-	GetFolderContent(ctx *WordBankContext, id uuid.UUID) (*models.FolderContent, error)
+	InsertFolder(ctx *WordBankContext, folder *models.Folder) *WordBankError
+	QueryFolders(ctx *WordBankContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], *WordBankError)
+	UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, *WordBankError)
+	DeleteFolder(ctx *WordBankContext, id uuid.UUID) *WordBankError
+	GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, *WordBankError)
+	GetFolderContent(ctx *WordBankContext, folderID uuid.UUID) (*models.FolderContent, *WordBankError)
 }
 
-type WordBankContext interface{}
-
-type WordBankError struct {
-	Status int
-	Err    error
+type WordBankContext struct {
+	pgContext *pg.PgContext
 }
 
-func (e WordBankError) Error() string {
-	return e.Err.Error()
+func (ctx *WordBankContext) Commit() error {
+	return ctx.pgContext.Commit()
 }

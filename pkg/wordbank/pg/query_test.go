@@ -3,7 +3,8 @@ package pg
 import (
 	"fmt"
 	"testing"
-	"wordbank/pkg/wordbank/models"
+
+	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"

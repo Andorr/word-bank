@@ -1,9 +1,11 @@
 package wordbank
 
 import (
+	"context"
 	"os"
 	"testing"
-	"wordbank/pkg/wordbank/models"
+
+	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -31,7 +33,6 @@ func (suite *TestWBSuite) TearDownTest() {
 
 func (suite *TestWBSuite) TestInsertWord() {
 	// Insert word
-
 	word := &models.Word{
 		Value: "test",
 		Class: models.WordClassNoun,
@@ -41,7 +42,13 @@ func (suite *TestWBSuite) TestInsertWord() {
 		},
 	}
 
-	if err := suite.wb.Word.InsertWord(nil, word); err != nil {
+	ctx, err := suite.wb.NewContext(context.Background())
+	if err != nil {
+		suite.FailNowf("Error creating context", err.Error())
+		return
+	}
+
+	if err := suite.wb.Word.InsertWord(ctx, word); err != nil {
 		suite.FailNowf("Error inserting word", err.Error())
 		return
 	}
@@ -52,7 +59,7 @@ func (suite *TestWBSuite) TestInsertWord() {
 	}
 	suite.Assert().NotEqual(uuid.Nil, *word.ID)
 
-	word2, err := suite.wb.Word.GetWord(nil, *word.ID)
+	word2, err := suite.wb.Word.GetWord(ctx, *word.ID)
 	if err != nil {
 		suite.FailNowf("Error getting word", err.Error())
 		return
@@ -62,9 +69,15 @@ func (suite *TestWBSuite) TestInsertWord() {
 
 func (suite *TestWBSuite) TestWBQueryWords() {
 
+	ctx, err := suite.wb.NewContext(context.Background())
+	if err != nil {
+		suite.FailNowf("Error creating context", err.Error())
+		return
+	}
+
 	query := "test"
 	class := models.WordClassNoun
-	words, err := suite.wb.Word.QueryWords(nil, models.WordQueryOptions{
+	words, err := suite.wb.Word.QueryWords(ctx, models.WordQueryOptions{
 		Query: &query,
 		Class: &class,
 	}, &models.PaginationOptions{})
