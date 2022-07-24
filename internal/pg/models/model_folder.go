@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
-
 	"github.com/google/uuid"
 )
 

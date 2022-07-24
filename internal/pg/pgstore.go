@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"log"
 
+	pgmodels "github.com/Andorr/word-bank/internal/pg/models"
 	"github.com/Andorr/word-bank/pkg/arrayutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
-	pgmodels "github.com/Andorr/word-bank/pkg/wordbank/pg/models"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"

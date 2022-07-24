@@ -8,7 +8,7 @@ import (
 
 type Folder struct {
 	ID     *uuid.UUID  `json:"id"`
-	Name   string      `json:"name"`
+	Name   string      `json:"name" validate:"required"`
 	Parent *uuid.UUID  `json:"parent"`
 	Words  []uuid.UUID `json:"words"`
 
@@ -29,7 +29,7 @@ type FolderQueryOptions struct {
 }
 
 type FolderUpdateOptions struct {
-	ID     uuid.UUID
+	ID     uuid.UUID `validate:"required"`
 	Name   *string
 	Parent *uuid.UUID
 	Add    []uuid.UUID

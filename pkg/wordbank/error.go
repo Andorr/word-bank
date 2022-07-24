@@ -8,6 +8,8 @@ type WordBankError struct {
 	Err    error
 }
 
+var _ error = (*WordBankError)(nil)
+
 func (e WordBankError) Error() string {
 	return e.Err.Error()
 }

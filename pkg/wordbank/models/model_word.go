@@ -23,12 +23,25 @@ const (
 	WordClassOther        WordClass = "OTHER"
 )
 
+var WordClasses = []WordClass{
+	WordClassNoun,
+	WordClassPronoun,
+	WordClassVerb,
+	WordClassAdjective,
+	WordClassAdverb,
+	WordClassPreposition,
+	WordClassConjunction,
+	WordClassInterjection,
+	WordClassDeterminer,
+	WordClassOther,
+}
+
 type Word struct {
 	ID           *uuid.UUID     `json:"id"`
-	Value        string         `json:"value"`
-	Class        WordClass      `json:"class"`
+	Value        string         `json:"value" validate:"required"`
+	Class        WordClass      `json:"class" validate:"required"`
 	Tags         []WordTag      `json:"tags"`
-	Translations []*Translation `json:"translations"`
+	Translations []*Translation `json:"translations" validate:"required"`
 
 	CreatedAt *time.Time `json:"createdAt"`
 	UpdatedAt *time.Time `json:"updatedAt"`
@@ -46,8 +59,15 @@ type WordQueryOptions struct {
 	Class *WordClass
 }
 
+func (w *WordQueryOptions) Empty() {
+	w.Query = new(string)
+	w.Word = new(string)
+	w.Tags = new([]WordTag)
+	w.Class = new(WordClass)
+}
+
 type WordUpdateOptions struct {
-	ID           uuid.UUID
+	ID           uuid.UUID `validate:"required"`
 	Word         *string
 	Class        *WordClass
 	Tags         []WordTag

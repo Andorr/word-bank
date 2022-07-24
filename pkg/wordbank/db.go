@@ -1,8 +1,8 @@
 package wordbank
 
 import (
+	"github.com/Andorr/word-bank/internal/pg"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
-	"github.com/Andorr/word-bank/pkg/wordbank/pg"
 
 	"github.com/google/uuid"
 )

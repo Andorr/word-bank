@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
-
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )

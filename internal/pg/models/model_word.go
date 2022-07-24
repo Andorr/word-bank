@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Andorr/word-bank/internal/pg/utils"
 	"github.com/Andorr/word-bank/pkg/arrayutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
-	"github.com/Andorr/word-bank/pkg/wordbank/pg/utils"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"

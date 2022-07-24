@@ -11,6 +11,8 @@ import (
 
 const (
 	ErrFolderNotEmpty ErrorCode = "FOLDER_NOT_EMPTY"
+	ErrInvalidWord    ErrorCode = "INVALID_WORD"
+	ErrInvalidFolder  ErrorCode = "INVALID_FOLDER"
 )
 
 type PgWordService struct {
@@ -24,6 +26,10 @@ func NewPgWordService(dbStore DBStore) *PgWordService {
 }
 
 func (c *PgWordService) InsertWord(ctx *WordBankContext, word *models.Word) *WordBankError {
+	if err := ValidateWord(word); err != nil {
+		return errBadRequest(ErrInvalidWord, err)
+	}
+
 	return errServerError(c.DB.InsertWord(ctx.pgContext, word))
 }
 
@@ -47,10 +53,13 @@ func (c *PgWordService) GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Wor
 }
 
 func (c *PgWordService) UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, *WordBankError) {
+	if err := ValidateWordUpdateOptions(updateOptions); err != nil {
+		return nil, errBadRequest(ErrInvalidWord, err)
+	}
+
 	return errServerErrorWithValue(c.DB.UpdateWord(ctx.pgContext, updateOptions))
 }
 func (c *PgWordService) DeleteWord(ctx *WordBankContext, id uuid.UUID) *WordBankError {
-	// TODO: Add some transaction handling here
 	err := c.DB.DeleteWord(ctx.pgContext, id)
 	if err != nil {
 		return errServerError(err)
@@ -83,12 +92,20 @@ func (c *PgWordService) RandomWords(ctx *WordBankContext, count int) ([]*models.
 
 // Folders
 func (c *PgWordService) InsertFolder(ctx *WordBankContext, folder *models.Folder) *WordBankError {
+	if err := ValidateFolder(folder); err != nil {
+		return errBadRequest(ErrInvalidFolder, err)
+	}
+
 	return errServerError(c.DB.InsertFolder(ctx.pgContext, folder))
 }
 func (c *PgWordService) QueryFolders(ctx *WordBankContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], *WordBankError) {
 	return errServerErrorWithValue(c.DB.QueryFolders(ctx.pgContext, folder, pagination))
 }
 func (c *PgWordService) UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, *WordBankError) {
+	if err := ValidateFolderUpdateOptions(updateOptions); err != nil {
+		return nil, errBadRequest(ErrInvalidFolder, err)
+	}
+
 	return errServerErrorWithValue(c.DB.UpdateFolder(ctx.pgContext, updateOptions))
 }
 func (c *PgWordService) DeleteFolder(ctx *WordBankContext, id uuid.UUID) *WordBankError {

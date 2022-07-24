@@ -4,4 +4,4 @@ ifneq (,$(wildcard ./.env))
 endif
 
 run-api:
-	go run ./cmd/api/main.go --db=${DB_URI}
+	go run ./cmd/api/main.go --db=${WORDBANK_DB_URI} --token=${WORDBANK_AUTH_TOKEN}

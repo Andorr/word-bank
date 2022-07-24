@@ -19,7 +19,7 @@ type TestWBSuite struct {
 func (suite *TestWBSuite) SetupTest() {
 
 	// Setup test
-	wb, err := NewWithPG(os.Getenv("TEST_DB_URI"))
+	wb, err := NewWithPG(os.Getenv("WORDBANK_TEST_DB_URI"))
 	if err != nil {
 		suite.T().Fatalf("Error in SetupTest: %s", err)
 		return

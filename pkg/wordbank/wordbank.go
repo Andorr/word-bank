@@ -3,8 +3,8 @@ package wordbank
 import (
 	"context"
 
+	"github.com/Andorr/word-bank/internal/pg"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
-	"github.com/Andorr/word-bank/pkg/wordbank/pg"
 
 	_ "github.com/lib/pq"
 

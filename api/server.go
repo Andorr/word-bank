@@ -1,20 +1,23 @@
 package api
 
 import (
+	m "github.com/Andorr/word-bank/api/middleware"
 	"github.com/Andorr/word-bank/api/word"
 	"github.com/Andorr/word-bank/pkg/wordbank"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server struct {
-	Addr  string
-	DBURI string
+	addr  string
+	dbURI string
 	e     *echo.Echo
 }
 
 type ServerOptions struct {
 	Addr  string
 	DBURI string
+	Token string
 }
 
 type Controller interface {
@@ -23,6 +26,10 @@ type Controller interface {
 
 func NewServer(options ServerOptions) (*Server, error) {
 	e := echo.New()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(m.AuthWithSingleToken(options.Token))
 
 	// Initialize wordbank
 	wb, err := wordbank.NewWithPG(options.DBURI)
@@ -37,12 +44,12 @@ func NewServer(options ServerOptions) (*Server, error) {
 	wordCtrl.Routes(e)
 
 	return &Server{
-		Addr:  options.Addr,
-		DBURI: options.DBURI,
+		addr:  options.Addr,
+		dbURI: options.DBURI,
 		e:     e,
 	}, nil
 }
 
 func (s *Server) Run() error {
-	return s.e.Start(s.Addr)
+	return s.e.Start(s.addr)
 }
