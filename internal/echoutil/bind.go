@@ -13,3 +13,12 @@ func BindWord(e echo.Context) (*models.Word, error) {
 	}
 	return word, nil
 }
+
+func BindWordUpdateOptions(e echo.Context) (*models.WordUpdateOptions, error) {
+	options := new(models.WordUpdateOptions)
+	if err := e.Bind(options); err != nil {
+		e.Error(err)
+		return nil, err
+	}
+	return options, nil
+}

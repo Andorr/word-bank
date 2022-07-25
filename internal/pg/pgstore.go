@@ -6,7 +6,7 @@ import (
 	"log"
 
 	pgmodels "github.com/Andorr/word-bank/internal/pg/models"
-	"github.com/Andorr/word-bank/pkg/arrayutil"
+	"github.com/Andorr/word-bank/internal/arrayutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"
@@ -14,34 +14,49 @@ import (
 	"github.com/lib/pq"
 )
 
+const PgContextKey = "__pgContext"
+
 type PgDBStore struct {
 	DB *sqlx.DB
 }
 
 type PgContext struct {
-	conn QueryContext
+	conn Queryer
 }
 
-func (ctx *PgContext) Commit() error {
-	tx, ok := ctx.conn.(*sqlx.Tx)
+func (store *PgDBStore) Tx() (*sqlx.Tx, error) {
+	tx, err := store.DB.Beginx()
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
+
+func (store *PgDBStore) CommitContext(ctx context.Context) error {
+	tx, ok := ctx.Value(PgContextKey).(*sqlx.Tx)
 	if !ok {
 		return nil
 	}
 	return tx.Commit()
 }
 
-func (ctx *PgContext) Close() error {
-	db, ok := ctx.conn.(*sqlx.DB)
+func (store *PgDBStore) CloseContext(ctx context.Context) error {
+	db, ok := ctx.Value(PgContextKey).(*sqlx.DB)
 	if ok {
 		return db.Close()
 	}
 	return nil
 }
 
-func NewDBStore(db *sqlx.DB) *PgDBStore {
+func NewDBStore(connectionString string) (*PgDBStore, error) {
+	db, err := sqlx.Connect("postgres", connectionString)
+	if err != nil {
+		return nil, err
+	}
+
 	return &PgDBStore{
 		DB: db,
-	}
+	}, nil
 }
 
 func (c *PgDBStore) NewContext(ctx context.Context) (*PgContext, error) {
@@ -51,7 +66,7 @@ func (c *PgDBStore) NewContext(ctx context.Context) (*PgContext, error) {
 	}, err
 }
 
-type QueryContext interface {
+type Queryer interface {
 	sqlx.Ext
 	sqlx.ExecerContext
 	sqlx.PreparerContext
@@ -75,15 +90,15 @@ type QueryContext interface {
 	NamedQuery(string, interface{}) (*sqlx.Rows, error)
 }
 
-var _ QueryContext = (*sqlx.DB)(nil)
-var _ QueryContext = (*sqlx.Tx)(nil)
+var _ Queryer = (*sqlx.DB)(nil)
+var _ Queryer = (*sqlx.Tx)(nil)
 
 // ----- WORDS ------
-func (c *PgDBStore) InsertWord(ctx *PgContext, word *models.Word) error {
+func (c *PgDBStore) InsertWord(ctx context.Context, word *models.Word) error {
 
 	pgWord := pgmodels.PgWordFrom(word)
 
-	err := ctx.conn.
+	err := c.driver(ctx).
 		QueryRowx("INSERT INTO words (value, class, tags, translations) VALUES ($1, $2, $3, $4) RETURNING *",
 			pgWord.Value, pgWord.Class, pq.Array(pgWord.Tags), pq.Array(pgWord.Translations)).
 		StructScan(&pgWord)
@@ -94,7 +109,7 @@ func (c *PgDBStore) InsertWord(ctx *PgContext, word *models.Word) error {
 	return err
 }
 
-func (c *PgDBStore) QueryWords(ctx *PgContext, options models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], error) {
+func (c *PgDBStore) QueryWords(ctx context.Context, options models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], error) {
 
 	qb := NewQuery("words as w").
 		Column("w.*").
@@ -124,14 +139,14 @@ func (c *PgDBStore) QueryWords(ctx *PgContext, options models.WordQueryOptions, 
 
 	query, params := qb.Build()
 	words := make([]pgmodels.PgWord, 0)
-	err := ctx.conn.Select(&words, query, params...)
+	err := c.driver(ctx).Select(&words, query, params...)
 	if err != nil {
 		return nil, err
 	}
 
 	query, params = countQb.Build()
 	var count int
-	err = ctx.conn.QueryRowx(query, params...).Scan(&count)
+	err = c.driver(ctx).QueryRowx(query, params...).Scan(&count)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +161,7 @@ func (c *PgDBStore) QueryWords(ctx *PgContext, options models.WordQueryOptions, 
 	}, nil
 }
 
-func (c *PgDBStore) UpdateWord(ctx *PgContext, updateOptions models.WordUpdateOptions) (*models.Word, error) {
+func (c *PgDBStore) UpdateWord(ctx context.Context, updateOptions models.WordUpdateOptions) (*models.Word, error) {
 
 	qb := Update("words")
 
@@ -175,27 +190,27 @@ func (c *PgDBStore) UpdateWord(ctx *PgContext, updateOptions models.WordUpdateOp
 	query, params := qb.Build()
 
 	var word pgmodels.PgWord
-	err := ctx.conn.QueryRowx(query, params...).
+	err := c.driver(ctx).QueryRowx(query, params...).
 		StructScan(&word)
 
 	return word.ToWord(), err
 }
 
-func (c *PgDBStore) DeleteWord(ctx *PgContext, id uuid.UUID) error {
+func (c *PgDBStore) DeleteWord(ctx context.Context, id uuid.UUID) error {
 	query, params := Delete("words").Where("id = ?", id).Build()
 
-	_, err := ctx.conn.Exec(query, params...)
+	_, err := c.driver(ctx).Exec(query, params...)
 	return err
 }
 
-func (c *PgDBStore) GetWordsByIds(ctx *PgContext, ids []uuid.UUID) ([]*models.Word, error) {
+func (c *PgDBStore) GetWordsByIds(ctx context.Context, ids []uuid.UUID) ([]*models.Word, error) {
 	var words []*pgmodels.PgWord
 	query, args, err := sqlx.In("SELECT * FROM words WHERE id::text IN (?)", ids)
 	if err != nil {
 		return nil, err
 	}
-	query = ctx.conn.Rebind(query)
-	err = ctx.conn.Select(&words, query, args...)
+	query = c.driver(ctx).Rebind(query)
+	err = c.driver(ctx).Select(&words, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -205,9 +220,9 @@ func (c *PgDBStore) GetWordsByIds(ctx *PgContext, ids []uuid.UUID) ([]*models.Wo
 	}), err
 }
 
-func (c *PgDBStore) RandomWords(ctx *PgContext, count int) ([]*models.Word, error) {
+func (c *PgDBStore) RandomWords(ctx context.Context, count int) ([]*models.Word, error) {
 	var words []*pgmodels.PgWord
-	err := ctx.conn.Select(&words, "SELEC * FROM words ORDER BY RANDOM() LIMIT ?", count)
+	err := c.driver(ctx).Select(&words, "SELEC * FROM words ORDER BY RANDOM() LIMIT ?", count)
 	if err != nil {
 		return nil, err
 	}
@@ -218,10 +233,10 @@ func (c *PgDBStore) RandomWords(ctx *PgContext, count int) ([]*models.Word, erro
 }
 
 // ------ FOLDERS ------
-func (c *PgDBStore) InsertFolder(ctx *PgContext, folder *models.Folder) error {
+func (c *PgDBStore) InsertFolder(ctx context.Context, folder *models.Folder) error {
 	f := pgmodels.PgFolderFrom(folder)
 
-	err := ctx.conn.
+	err := c.driver(ctx).
 		QueryRowx("INSERT INTO folders (name, parent, words) VALUES ($1, $2, $3) RETURNING *",
 			f.Name, f.Parent, f.Words).
 		StructScan(&f)
@@ -233,7 +248,7 @@ func (c *PgDBStore) InsertFolder(ctx *PgContext, folder *models.Folder) error {
 
 }
 
-func (c *PgDBStore) QueryFolders(ctx *PgContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], error) {
+func (c *PgDBStore) QueryFolders(ctx context.Context, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], error) {
 
 	qb := NewQuery("folders as f")
 
@@ -255,14 +270,14 @@ func (c *PgDBStore) QueryFolders(ctx *PgContext, folder models.FolderQueryOption
 
 	query, params := qb.Build()
 	folders := make([]pgmodels.PgFolder, 0)
-	err := ctx.conn.Select(&folders, query, params...)
+	err := c.driver(ctx).Select(&folders, query, params...)
 	if err != nil {
 		return nil, err
 	}
 
 	query, params = countQb.Build()
 	var count int
-	err = ctx.conn.QueryRowx(query, params...).Scan(&count)
+	err = c.driver(ctx).QueryRowx(query, params...).Scan(&count)
 	if err != nil {
 		return nil, err
 	}
@@ -277,11 +292,11 @@ func (c *PgDBStore) QueryFolders(ctx *PgContext, folder models.FolderQueryOption
 	}, nil
 }
 
-func (c *PgDBStore) UpdateFolder(ctx *PgContext, updateOptions models.FolderUpdateOptions) (*models.Folder, error) {
+func (c *PgDBStore) UpdateFolder(ctx context.Context, updateOptions models.FolderUpdateOptions) (*models.Folder, error) {
 
 	var folder pgmodels.PgFolder
 
-	tx := ctx.conn
+	tx := c.driver(ctx)
 
 	err := tx.QueryRowx("SELECT * FROM folders WHERE id = ?", updateOptions.ID).StructScan(&folder)
 	if err != nil {
@@ -322,22 +337,36 @@ func (c *PgDBStore) UpdateFolder(ctx *PgContext, updateOptions models.FolderUpda
 	return folder.ToFolder(), nil
 }
 
-func (c *PgDBStore) DeleteFolder(ctx *PgContext, id uuid.UUID) error {
+func (c *PgDBStore) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 	query, params := Delete("folders").Where("id = ?", id).Build()
 
-	_, err := ctx.conn.Exec(query, params...)
+	_, err := c.driver(ctx).Exec(query, params...)
 	return err
 
 }
 
-func (c *PgDBStore) GetFolder(ctx *PgContext, id uuid.UUID) (*models.Folder, error) {
+func (c *PgDBStore) GetFolder(ctx context.Context, id uuid.UUID) (*models.Folder, error) {
 	var folder pgmodels.PgFolder
-	err := ctx.conn.QueryRowx("SELECT * FROM folders WHERE id = ?", id).StructScan(&folder)
+	err := c.driver(ctx).QueryRowx("SELECT * FROM folders WHERE id = ?", id).StructScan(&folder)
 	if err != nil {
 		return nil, err
 	}
 
 	return folder.ToFolder(), nil
+}
+
+func (c *PgDBStore) driver(ctx context.Context) Queryer {
+	value := ctx.Value(PgContextKey)
+	tx, ok := value.(*sqlx.Tx)
+	if ok {
+		return tx
+	}
+	// conn, ok := value.(*sqlx.Conn)
+	// if ok {
+	// 	return conn
+	// }
+
+	return c.DB
 }
 
 type QueryLogger struct {

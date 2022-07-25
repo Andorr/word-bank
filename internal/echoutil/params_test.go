@@ -35,7 +35,6 @@ func TestBindPaginationOptionsNormal(t *testing.T) {
 	values = req.URL.Query()
 	values.Set("page", "not-int")
 	req.URL.RawQuery = values.Encode()
-	t.Logf("%s", req.URL.RawQuery)
 	c = e.NewContext(req, rec)
 
 	paginationOptions, err = BindPaginationOptions(c)

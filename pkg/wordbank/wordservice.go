@@ -3,7 +3,7 @@ package wordbank
 import (
 	"fmt"
 
-	"github.com/Andorr/word-bank/pkg/arrayutil"
+	"github.com/Andorr/word-bank/internal/arrayutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"
@@ -13,32 +13,33 @@ const (
 	ErrFolderNotEmpty ErrorCode = "FOLDER_NOT_EMPTY"
 	ErrInvalidWord    ErrorCode = "INVALID_WORD"
 	ErrInvalidFolder  ErrorCode = "INVALID_FOLDER"
+	ErrInvalidCount   ErrorCode = "INVALID_COUNT"
 )
 
-type PgWordService struct {
+type wordServiceImpl struct {
 	DB DBStore
 }
 
-func NewPgWordService(dbStore DBStore) *PgWordService {
-	return &PgWordService{
+func newWordService(dbStore DBStore) *wordServiceImpl {
+	return &wordServiceImpl{
 		DB: dbStore,
 	}
 }
 
-func (c *PgWordService) InsertWord(ctx *WordBankContext, word *models.Word) *WordBankError {
+func (c *wordServiceImpl) InsertWord(ctx *WordBankContext, word *models.Word) error {
 	if err := ValidateWord(word); err != nil {
 		return errBadRequest(ErrInvalidWord, err)
 	}
 
-	return errServerError(c.DB.InsertWord(ctx.pgContext, word))
+	return errServerError(c.DB.InsertWord(ctx, word))
 }
 
-func (c *PgWordService) QueryWords(ctx *WordBankContext, word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], *WordBankError) {
-	return errServerErrorWithValue(c.DB.QueryWords(ctx.pgContext, word, pagination))
+func (c *wordServiceImpl) QueryWords(ctx *WordBankContext, word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], error) {
+	return errServerErrorWithValue(c.DB.QueryWords(ctx, word, pagination))
 }
 
-func (c *PgWordService) GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Word, *WordBankError) {
-	words, err := c.DB.GetWordsByIds(ctx.pgContext, []uuid.UUID{id})
+func (c *wordServiceImpl) GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Word, error) {
+	words, err := c.DB.GetWordsByIds(ctx, []uuid.UUID{id})
 	if err != nil {
 		return nil, errServerError(err)
 	}
@@ -52,20 +53,20 @@ func (c *PgWordService) GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Wor
 	return *word, nil
 }
 
-func (c *PgWordService) UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, *WordBankError) {
+func (c *wordServiceImpl) UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, error) {
 	if err := ValidateWordUpdateOptions(updateOptions); err != nil {
 		return nil, errBadRequest(ErrInvalidWord, err)
 	}
 
-	return errServerErrorWithValue(c.DB.UpdateWord(ctx.pgContext, updateOptions))
+	return errServerErrorWithValue(c.DB.UpdateWord(ctx, updateOptions))
 }
-func (c *PgWordService) DeleteWord(ctx *WordBankContext, id uuid.UUID) *WordBankError {
-	err := c.DB.DeleteWord(ctx.pgContext, id)
+func (c *wordServiceImpl) DeleteWord(ctx *WordBankContext, id uuid.UUID) error {
+	err := c.DB.DeleteWord(ctx, id)
 	if err != nil {
 		return errServerError(err)
 	}
 
-	folders, err := c.DB.QueryFolders(ctx.pgContext, models.FolderQueryOptions{
+	folders, err := c.DB.QueryFolders(ctx, models.FolderQueryOptions{
 		Words: []uuid.UUID{id},
 	}, nil)
 	if err != nil {
@@ -74,7 +75,7 @@ func (c *PgWordService) DeleteWord(ctx *WordBankContext, id uuid.UUID) *WordBank
 
 	for _, folder := range folders.Results {
 		if len(folder.Words) == 0 {
-			_, err = c.DB.UpdateFolder(ctx.pgContext, models.FolderUpdateOptions{
+			_, err = c.DB.UpdateFolder(ctx, models.FolderUpdateOptions{
 				ID:     *folder.ID,
 				Remove: []uuid.UUID{id},
 			})
@@ -86,31 +87,35 @@ func (c *PgWordService) DeleteWord(ctx *WordBankContext, id uuid.UUID) *WordBank
 
 	return nil
 }
-func (c *PgWordService) RandomWords(ctx *WordBankContext, count int) ([]*models.Word, *WordBankError) {
-	return errServerErrorWithValue(c.DB.RandomWords(ctx.pgContext, count))
+func (c *wordServiceImpl) RandomWords(ctx *WordBankContext, count int) ([]*models.Word, error) {
+	if count < 1 {
+		return nil, errBadRequest(ErrInvalidCount, fmt.Errorf("count must be greater than 0"))
+	}
+
+	return errServerErrorWithValue(c.DB.RandomWords(ctx, count))
 }
 
 // Folders
-func (c *PgWordService) InsertFolder(ctx *WordBankContext, folder *models.Folder) *WordBankError {
+func (c *wordServiceImpl) InsertFolder(ctx *WordBankContext, folder *models.Folder) error {
 	if err := ValidateFolder(folder); err != nil {
 		return errBadRequest(ErrInvalidFolder, err)
 	}
 
-	return errServerError(c.DB.InsertFolder(ctx.pgContext, folder))
+	return errServerError(c.DB.InsertFolder(ctx, folder))
 }
-func (c *PgWordService) QueryFolders(ctx *WordBankContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], *WordBankError) {
-	return errServerErrorWithValue(c.DB.QueryFolders(ctx.pgContext, folder, pagination))
+func (c *wordServiceImpl) QueryFolders(ctx *WordBankContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], error) {
+	return errServerErrorWithValue(c.DB.QueryFolders(ctx, folder, pagination))
 }
-func (c *PgWordService) UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, *WordBankError) {
+func (c *wordServiceImpl) UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, error) {
 	if err := ValidateFolderUpdateOptions(updateOptions); err != nil {
 		return nil, errBadRequest(ErrInvalidFolder, err)
 	}
 
-	return errServerErrorWithValue(c.DB.UpdateFolder(ctx.pgContext, updateOptions))
+	return errServerErrorWithValue(c.DB.UpdateFolder(ctx, updateOptions))
 }
-func (c *PgWordService) DeleteFolder(ctx *WordBankContext, id uuid.UUID) *WordBankError {
+func (c *wordServiceImpl) DeleteFolder(ctx *WordBankContext, id uuid.UUID) error {
 	// TODO: Check if folder is empty
-	folder, err := c.DB.GetFolder(ctx.pgContext, id)
+	folder, err := c.DB.GetFolder(ctx, id)
 	if err != nil {
 		return errServerError(err)
 	}
@@ -120,7 +125,7 @@ func (c *PgWordService) DeleteFolder(ctx *WordBankContext, id uuid.UUID) *WordBa
 	}
 
 	// Check if there are subfolders
-	folders, err := c.DB.QueryFolders(ctx.pgContext, models.FolderQueryOptions{
+	folders, err := c.DB.QueryFolders(ctx, models.FolderQueryOptions{
 		Parent: &id,
 	}, nil)
 	if err != nil {
@@ -130,21 +135,21 @@ func (c *PgWordService) DeleteFolder(ctx *WordBankContext, id uuid.UUID) *WordBa
 		return errBadRequest(ErrFolderNotEmpty, fmt.Errorf("folder is not empty"))
 	}
 
-	return errServerError(c.DB.DeleteFolder(ctx.pgContext, id))
+	return errServerError(c.DB.DeleteFolder(ctx, id))
 }
-func (c *PgWordService) GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, *WordBankError) {
-	return errServerErrorWithValue(c.DB.GetFolder(ctx.pgContext, id))
+func (c *wordServiceImpl) GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, error) {
+	return errServerErrorWithValue(c.DB.GetFolder(ctx, id))
 }
-func (c *PgWordService) GetFolderContent(ctx *WordBankContext, folderID uuid.UUID) (*models.FolderContent, *WordBankError) {
+func (c *wordServiceImpl) GetFolderContent(ctx *WordBankContext, folderID uuid.UUID) (*models.FolderContent, error) {
 
-	folders, err := c.DB.QueryFolders(ctx.pgContext, models.FolderQueryOptions{
+	folders, err := c.DB.QueryFolders(ctx, models.FolderQueryOptions{
 		Parent: &folderID,
 	}, nil)
 	if err != nil {
 		return nil, errServerError(err)
 	}
 
-	words, err := c.DB.GetWordsByIds(ctx.pgContext,
+	words, err := c.DB.GetWordsByIds(ctx,
 		arrayutil.Flatten(
 			arrayutil.Map(folders.Results, func(folder *models.Folder) []uuid.UUID {
 				return folder.Words

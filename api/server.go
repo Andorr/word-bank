@@ -32,7 +32,7 @@ func NewServer(options ServerOptions) (*Server, error) {
 	e.Use(m.AuthWithSingleToken(options.Token))
 
 	// Initialize wordbank
-	wb, err := wordbank.NewWithPG(options.DBURI)
+	wb, err := wordbank.New(options.DBURI)
 	if err != nil {
 		return nil, err
 	}

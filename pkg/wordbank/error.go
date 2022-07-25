@@ -14,14 +14,14 @@ func (e WordBankError) Error() string {
 	return e.Err.Error()
 }
 
-func errServerError(err error) *WordBankError {
+func errServerError(err error) error {
 	if err == nil {
 		return nil
 	}
 	return &WordBankError{Status: 500, Err: err}
 }
 
-func errBadRequest(code ErrorCode, err error) *WordBankError {
+func errBadRequest(code ErrorCode, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -35,7 +35,7 @@ func errNotFound(err error) *WordBankError {
 	return &WordBankError{Status: 404, Err: err}
 }
 
-func errServerErrorWithValue[T any](value T, err error) (T, *WordBankError) {
+func errServerErrorWithValue[T any](value T, err error) (T, error) {
 	if err == nil {
 		return value, nil
 	}

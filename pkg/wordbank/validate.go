@@ -3,7 +3,7 @@ package wordbank
 import (
 	"fmt"
 
-	"github.com/Andorr/word-bank/pkg/arrayutil"
+	"github.com/Andorr/word-bank/internal/arrayutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"

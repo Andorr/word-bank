@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/Andorr/word-bank/internal/pg/utils"
-	"github.com/Andorr/word-bank/pkg/arrayutil"
+	"github.com/Andorr/word-bank/internal/arrayutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"

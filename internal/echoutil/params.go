@@ -1,7 +1,10 @@
 package echoutil
 
 import (
+	"fmt"
+
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -48,4 +51,16 @@ func BindWordQueryOptions(c echo.Context) (*models.WordQueryOptions, error) {
 		opt.Tags = &options.Tags
 	}
 	return opt, nil
+}
+
+func BindParamUUID(c echo.Context, key string) (*uuid.UUID, error) {
+	param := c.Param(key)
+	if param == "" {
+		return nil, fmt.Errorf("parameter %s is required", key)
+	}
+	id, err := uuid.Parse(param)
+	if err != nil {
+		return nil, fmt.Errorf("parameter %s is not a valid UUID", key)
+	}
+	return &id, nil
 }

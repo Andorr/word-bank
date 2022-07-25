@@ -2,6 +2,7 @@ package wordbank
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Andorr/word-bank/internal/pg"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
@@ -9,60 +10,65 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
 
 type WordBank struct {
 	Word WordService
 
-	newContextHandler func(context.Context) (*WordBankContext, error)
+	newContextHandler func() (*WordBankContext, error)
 }
 
-func NewWithPG(connectionString string) (*WordBank, error) {
-	db, err := sqlx.Connect("postgres", connectionString)
+func New(connectionString string) (*WordBank, error) {
+	return newWithPG(connectionString)
+}
+
+func newWithPG(connectionString string) (*WordBank, error) {
+
+	dbStore, err := pg.NewDBStore(connectionString)
 	if err != nil {
 		return nil, err
 	}
 
-	dbStore := pg.NewDBStore(db)
-
 	return &WordBank{
-		Word: NewPgWordService(dbStore),
-		newContextHandler: func(ctx context.Context) (*WordBankContext, error) {
-			pgContext, err := dbStore.NewContext(ctx)
+		Word: newWordService(dbStore),
+		newContextHandler: func() (*WordBankContext, error) {
+			tx, err := dbStore.Tx()
+			if err != nil {
+				return nil, err
+			}
 			return &WordBankContext{
-				pgContext: pgContext,
+				value: tx,
+				onCommit: func(ctx context.Context) error {
+					err := dbStore.CommitContext(ctx)
+					return err
+				},
 			}, err
 		},
 	}, nil
 }
 
-func (wb *WordBank) NewContext(ctx context.Context) (*WordBankContext, error) {
-	return wb.newContextHandler(ctx)
+func (wb *WordBank) NewContext() (*WordBankContext, error) {
+	if wb.newContextHandler == nil {
+		return nil, errServerError(fmt.Errorf("no context available"))
+	}
+
+	return wb.newContextHandler()
 }
 
 type WordService interface {
 	// Words
-	InsertWord(ctx *WordBankContext, word *models.Word) *WordBankError
-	QueryWords(ctx *WordBankContext, word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], *WordBankError)
-	GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Word, *WordBankError)
-	UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, *WordBankError)
-	DeleteWord(ctx *WordBankContext, id uuid.UUID) *WordBankError
-	RandomWords(ctx *WordBankContext, count int) ([]*models.Word, *WordBankError)
+	InsertWord(ctx *WordBankContext, word *models.Word) error
+	QueryWords(ctx *WordBankContext, word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], error)
+	GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Word, error)
+	UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, error)
+	DeleteWord(ctx *WordBankContext, id uuid.UUID) error
+	RandomWords(ctx *WordBankContext, count int) ([]*models.Word, error)
 
 	// Folders
-	InsertFolder(ctx *WordBankContext, folder *models.Folder) *WordBankError
-	QueryFolders(ctx *WordBankContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], *WordBankError)
-	UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, *WordBankError)
-	DeleteFolder(ctx *WordBankContext, id uuid.UUID) *WordBankError
-	GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, *WordBankError)
-	GetFolderContent(ctx *WordBankContext, folderID uuid.UUID) (*models.FolderContent, *WordBankError)
-}
-
-type WordBankContext struct {
-	pgContext *pg.PgContext
-}
-
-func (ctx *WordBankContext) Commit() error {
-	return ctx.pgContext.Commit()
+	InsertFolder(ctx *WordBankContext, folder *models.Folder) error
+	QueryFolders(ctx *WordBankContext, folder models.FolderQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Folder], error)
+	UpdateFolder(ctx *WordBankContext, updateOptions models.FolderUpdateOptions) (*models.Folder, error)
+	DeleteFolder(ctx *WordBankContext, id uuid.UUID) error
+	GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, error)
+	GetFolderContent(ctx *WordBankContext, folderID uuid.UUID) (*models.FolderContent, error)
 }

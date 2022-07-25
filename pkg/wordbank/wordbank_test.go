@@ -1,7 +1,6 @@
 package wordbank
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -19,7 +18,7 @@ type TestWBSuite struct {
 func (suite *TestWBSuite) SetupTest() {
 
 	// Setup test
-	wb, err := NewWithPG(os.Getenv("WORDBANK_TEST_DB_URI"))
+	wb, err := New(os.Getenv("WORDBANK_TEST_DB_URI"))
 	if err != nil {
 		suite.T().Fatalf("Error in SetupTest: %s", err)
 		return
@@ -42,7 +41,7 @@ func (suite *TestWBSuite) TestInsertWord() {
 		},
 	}
 
-	ctx, err := suite.wb.NewContext(context.Background())
+	ctx, err := suite.wb.NewContext()
 	if err != nil {
 		suite.FailNowf("Error creating context", err.Error())
 		return
@@ -69,20 +68,21 @@ func (suite *TestWBSuite) TestInsertWord() {
 
 func (suite *TestWBSuite) TestWBQueryWords() {
 
-	ctx, err := suite.wb.NewContext(context.Background())
-	if err != nil {
-		suite.FailNowf("Error creating context", err.Error())
+	ctx, err1 := suite.wb.NewContext()
+	if err1 != nil {
+		suite.FailNowf("Error creating context", err1.Error())
 		return
 	}
 
 	query := "test"
 	class := models.WordClassNoun
-	words, err := suite.wb.Word.QueryWords(ctx, models.WordQueryOptions{
+	words, err2 := suite.wb.Word.QueryWords(ctx, models.WordQueryOptions{
 		Query: &query,
 		Class: &class,
 	}, &models.PaginationOptions{})
-	if err != nil {
-		suite.FailNowf("Error querying words", err.Error())
+	if err2 != nil {
+		suite.T().Logf("Error: %+v", err2)
+		suite.FailNowf("Error querying words", err2.Error())
 		return
 	}
 	if suite.Assert().NotNil(words) {

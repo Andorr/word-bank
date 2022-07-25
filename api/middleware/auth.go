@@ -3,7 +3,7 @@ package middleware
 import (
 	"strings"
 
-	"github.com/Andorr/word-bank/pkg/echoutil"
+	"github.com/Andorr/word-bank/internal/echoutil"
 	"github.com/labstack/echo/v4"
 )
 

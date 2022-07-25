@@ -21,8 +21,13 @@ func ErrUnauthorized(msg string) error {
 	return HTTPError(http.StatusUnauthorized, "", msg)
 }
 
-func ToHTTPError(err *wordbank.WordBankError, c echo.Context) error {
-	return HTTPError(err.Status, err.Code, err.Error())
+func ToHTTPError(err error, c echo.Context) error {
+	werr, ok := err.(*wordbank.WordBankError)
+	if !ok {
+		return HTTPError(http.StatusInternalServerError, "", err.Error())
+	}
+
+	return HTTPError(werr.Status, werr.Code, err.Error())
 }
 
 func HTTPError(statusCode int, errCode wordbank.ErrorCode, msg string) error {
