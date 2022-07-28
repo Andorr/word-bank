@@ -10,7 +10,7 @@ type WordBankError struct {
 
 var _ error = (*WordBankError)(nil)
 
-func (e WordBankError) Error() string {
+func (e *WordBankError) Error() string {
 	return e.Err.Error()
 }
 
@@ -28,7 +28,7 @@ func errBadRequest(code ErrorCode, err error) error {
 	return &WordBankError{Status: 400, Code: code, Err: err}
 }
 
-func errNotFound(err error) *WordBankError {
+func errNotFound(err error) error {
 	if err == nil {
 		return nil
 	}

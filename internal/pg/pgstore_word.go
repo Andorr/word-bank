@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"log"
 
-	pgmodels "github.com/Andorr/word-bank/internal/pg/models"
 	"github.com/Andorr/word-bank/internal/arrayutil"
+	pgmodels "github.com/Andorr/word-bank/internal/pg/models"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"
@@ -32,6 +32,10 @@ func (store *PgDBStore) Tx() (*sqlx.Tx, error) {
 	return tx, nil
 }
 
+func (store *PgDBStore) Conn(ctx context.Context) (*sqlx.DB, error) {
+	return store.DB, nil
+}
+
 func (store *PgDBStore) CommitContext(ctx context.Context) error {
 	tx, ok := ctx.Value(PgContextKey).(*sqlx.Tx)
 	if !ok {
@@ -44,6 +48,14 @@ func (store *PgDBStore) CloseContext(ctx context.Context) error {
 	db, ok := ctx.Value(PgContextKey).(*sqlx.DB)
 	if ok {
 		return db.Close()
+	}
+	return nil
+}
+
+func (store *PgDBStore) Rollback(ctx context.Context) error {
+	tx, ok := ctx.Value(PgContextKey).(*sqlx.Tx)
+	if ok {
+		return tx.Rollback()
 	}
 	return nil
 }
@@ -361,10 +373,6 @@ func (c *PgDBStore) driver(ctx context.Context) Queryer {
 	if ok {
 		return tx
 	}
-	// conn, ok := value.(*sqlx.Conn)
-	// if ok {
-	// 	return conn
-	// }
 
 	return c.DB
 }

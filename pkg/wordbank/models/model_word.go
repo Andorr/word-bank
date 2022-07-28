@@ -48,15 +48,15 @@ type Word struct {
 }
 
 type Translation struct {
-	ID    uuid.UUID
-	Value string
+	ID    uuid.UUID `json:"id"`
+	Value string    `json:"value" validate:"required"`
 }
 
 type WordQueryOptions struct {
-	Query *string
-	Word  *string
-	Tags  *[]WordTag
-	Class *WordClass
+	Query *string    `json:"query"`
+	Word  *string    `json:"word"`
+	Tags  *[]WordTag `json:"tags"`
+	Class *WordClass `json:"class"`
 }
 
 func (w *WordQueryOptions) Empty() {
@@ -67,9 +67,9 @@ func (w *WordQueryOptions) Empty() {
 }
 
 type WordUpdateOptions struct {
-	ID           uuid.UUID `validate:"required"`
-	Word         *string
-	Class        *WordClass
-	Tags         []WordTag
-	Translations []*Translation
+	ID           uuid.UUID      `json:"id" validate:"required"`
+	Word         *string        `json:"word"`
+	Class        *WordClass     `json:"class"`
+	Tags         []WordTag      `json:"tags"`
+	Translations []*Translation `json:"translations"`
 }

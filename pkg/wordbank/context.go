@@ -7,6 +7,7 @@ import (
 
 type WordBankContext struct {
 	onCommit   func(ctx context.Context) error
+	onRollback func(ctx context.Context) error
 	key, value any
 }
 
@@ -29,9 +30,16 @@ func (ctx *WordBankContext) Value(key any) any {
 	return nil
 }
 
-func (ctx *WordBankContext) Commit() error {
+func (ctx *WordBankContext) commit() error {
 	if ctx.onCommit != nil {
 		return ctx.onCommit(ctx)
+	}
+	return nil
+}
+
+func (ctx *WordBankContext) rollback() error {
+	if ctx.onRollback != nil {
+		return ctx.onRollback(ctx)
 	}
 	return nil
 }

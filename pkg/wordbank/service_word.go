@@ -10,15 +10,19 @@ import (
 )
 
 const (
-	ErrFolderNotEmpty ErrorCode = "FOLDER_NOT_EMPTY"
-	ErrInvalidWord    ErrorCode = "INVALID_WORD"
-	ErrInvalidFolder  ErrorCode = "INVALID_FOLDER"
-	ErrInvalidCount   ErrorCode = "INVALID_COUNT"
+	ErrFolderNotEmpty  ErrorCode = "FOLDER_NOT_EMPTY"
+	ErrInvalidWord     ErrorCode = "INVALID_WORD"
+	ErrInvalidFolder   ErrorCode = "INVALID_FOLDER"
+	ErrInvalidCount    ErrorCode = "INVALID_COUNT"
+	ErrParentNotExists ErrorCode = "PARENT_NOT_EXISTS"
+	ErrWordsNotExists  ErrorCode = "WORDS_NOT_EXISTS"
 )
 
 type wordServiceImpl struct {
 	DB DBStore
 }
+
+var _ WordService = (*wordServiceImpl)(nil)
 
 func newWordService(dbStore DBStore) *wordServiceImpl {
 	return &wordServiceImpl{
@@ -51,6 +55,10 @@ func (c *wordServiceImpl) GetWord(ctx *WordBankContext, id uuid.UUID) (*models.W
 		return nil, errNotFound(fmt.Errorf("word not found"))
 	}
 	return *word, nil
+}
+
+func (c *wordServiceImpl) GetWordsByIDs(ctx *WordBankContext, ids []uuid.UUID) ([]*models.Word, error) {
+	return errServerErrorWithValue(c.DB.GetWordsByIds(ctx, ids))
 }
 
 func (c *wordServiceImpl) UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, error) {
@@ -99,6 +107,26 @@ func (c *wordServiceImpl) RandomWords(ctx *WordBankContext, count int) ([]*model
 func (c *wordServiceImpl) InsertFolder(ctx *WordBankContext, folder *models.Folder) error {
 	if err := ValidateFolder(folder); err != nil {
 		return errBadRequest(ErrInvalidFolder, err)
+	}
+
+	// Check if parent exists
+	if folder.Parent != nil {
+		parent, err := c.DB.GetFolder(ctx, *folder.Parent)
+		if err != nil {
+			return errServerError(err)
+		} else if parent == nil {
+			return errBadRequest(ErrParentNotExists, fmt.Errorf("parent folder not found"))
+		}
+	}
+
+	if len(folder.Words) > 0 {
+		words, err := c.DB.GetWordsByIds(ctx, folder.Words)
+		if err != nil {
+			return errServerError(err)
+		}
+		if len(words) != len(folder.Words) {
+			return errBadRequest(ErrWordsNotExists, fmt.Errorf("words not found"))
+		}
 	}
 
 	return errServerError(c.DB.InsertFolder(ctx, folder))

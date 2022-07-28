@@ -20,15 +20,8 @@ type WordController struct {
 	WB *wordbank.WordBank
 }
 
-func (c *WordController) Routes(e *echo.Echo) {
-	g := e.Group("/api/v1/words")
-
-	g.GET("/", c.QueryWords)
-
-}
-
 func (ctrl *WordController) QueryWords(c echo.Context) error {
-	ctx, err := ctrl.WB.NewContext()
+	ctx, err := ctrl.WB.NewContext(c.Request().Context())
 	if err != nil {
 		c.Logger().Errorf("failed to create context: %v", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -57,53 +50,39 @@ func (ctrl *WordController) QueryWords(c echo.Context) error {
 }
 
 func (ctrl *WordController) CreateWord(c echo.Context) error {
-	ctx, err := ctrl.WB.NewContext()
-	if err != nil {
-		c.Logger().Errorf("failed to create context: %v", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	// word, err := echoutil.BindWord(c)
-	// if err != nil {
-	// 	c.Logger().Errorf("failed to bind word: %v", err.Error())
-	// 	return echoutil.ErrBadRequest(ErrCodeInvalidQueryOptions, err.Error())
-	// }
 
 	type request struct {
 		models.Word
-		folder *uuid.UUID `json:"folder"`
+		Folder *uuid.UUID `json:"folder"`
 	}
 	var req request
-	if err = c.Bind(&req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		c.Logger().Errorf("failed to bind request: %v", err.Error())
 		return echoutil.ErrBadRequest(ErrCodeInvalidBody, err.Error())
 	}
 
-	err = ctrl.WB.Word.InsertWord(ctx, &req.Word)
-	if err != nil {
-		c.Logger().Errorf("failed to create word: %v", err.Error())
-		return echoutil.ToHTTPError(err, c)
-	}
-
-	if req.folder != nil {
-		_, err = ctrl.WB.Word.UpdateFolder(ctx, models.FolderUpdateOptions{
-			ID:  *req.folder,
-			Add: []uuid.UUID{*req.Word.ID},
-		})
+	return ctrl.WB.RunTx(func(ctx *wordbank.WordBankContext) error {
+		err := ctrl.WB.Word.InsertWord(ctx, &req.Word)
 		if err != nil {
-			c.Logger().Errorf("failed to add word to folder: %v", err.Error())
+			c.Logger().Errorf("failed to create word: %v", err.Error())
 			return echoutil.ToHTTPError(err, c)
 		}
-	}
 
-	err = ctx.Commit()
-	if err != nil {
-		c.Logger().Errorf("failed to commit context: %v", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
+		if req.Folder != nil {
+			_, err = ctrl.WB.Word.UpdateFolder(ctx, models.FolderUpdateOptions{
+				ID:  *req.Folder,
+				Add: []uuid.UUID{*req.Word.ID},
+			})
+			if err != nil {
+				c.Logger().Errorf("failed to add word to folder: %v", err.Error())
+				return echoutil.ToHTTPError(err, c)
+			}
+		}
 
-	c.JSON(200, req.Word)
-	return nil
+		c.JSON(200, req.Word)
+		return nil
+	})
+
 }
 
 func (ctrl *WordController) UpdateWord(c echo.Context) error {
@@ -114,7 +93,7 @@ func (ctrl *WordController) UpdateWord(c echo.Context) error {
 		return echoutil.ErrBadRequest(ErrCodeInvalidQueryOptions, err.Error())
 	}
 
-	ctx, err := ctrl.WB.NewContext()
+	ctx, err := ctrl.WB.NewContext(c.Request().Context())
 	if err != nil {
 		c.Logger().Errorf("failed to create context: %v", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -126,18 +105,12 @@ func (ctrl *WordController) UpdateWord(c echo.Context) error {
 		return echoutil.ToHTTPError(err, c)
 	}
 
-	err = ctx.Commit()
-	if err != nil {
-		c.Logger().Errorf("failed to commit context: %v", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	c.JSON(200, word)
 	return nil
 }
 
 func (ctrl *WordController) DeleteWord(c echo.Context) error {
-	ctx, err := ctrl.WB.NewContext()
+	ctx, err := ctrl.WB.NewContext(c.Request().Context())
 	if err != nil {
 		c.Logger().Errorf("failed to create context: %v", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -155,17 +128,11 @@ func (ctrl *WordController) DeleteWord(c echo.Context) error {
 		return echoutil.ToHTTPError(err, c)
 	}
 
-	err = ctx.Commit()
-	if err != nil {
-		c.Logger().Errorf("failed to commit context: %v", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
 	return nil
 }
 
 func (ctrl *WordController) GetWord(c echo.Context) error {
-	ctx, err := ctrl.WB.NewContext()
+	ctx, err := ctrl.WB.NewContext(c.Request().Context())
 	if err != nil {
 		c.Logger().Errorf("failed to create context: %v", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -188,7 +155,7 @@ func (ctrl *WordController) GetWord(c echo.Context) error {
 }
 
 func (ctrl *WordController) RandomWord(c echo.Context) error {
-	ctx, err := ctrl.WB.NewContext()
+	ctx, err := ctrl.WB.NewContext(c.Request().Context())
 	if err != nil {
 		c.Logger().Errorf("failed to create context: %v", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())

@@ -22,16 +22,16 @@ type FolderContent struct {
 }
 
 type FolderQueryOptions struct {
-	Query  *string
-	Words  []uuid.UUID
-	Parent *uuid.UUID
-	IDs    []uuid.UUID
+	Query  *string     `json:"query"`
+	Words  []uuid.UUID `json:"words"`
+	Parent *uuid.UUID  `json:"parent"`
+	IDs    []uuid.UUID `json:"ids"`
 }
 
 type FolderUpdateOptions struct {
-	ID     uuid.UUID `validate:"required"`
-	Name   *string
-	Parent *uuid.UUID
-	Add    []uuid.UUID
-	Remove []uuid.UUID
+	ID     uuid.UUID   `json:"id" validate:"required"`
+	Name   *string     `json:"name"`
+	Parent *uuid.UUID  `json:"parent"`
+	Add    []uuid.UUID `json:"add"`
+	Remove []uuid.UUID `json:"remove"`
 }

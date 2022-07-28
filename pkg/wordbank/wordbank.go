@@ -14,8 +14,10 @@ import (
 
 type WordBank struct {
 	Word WordService
+	Quiz QuizService
 
-	newContextHandler func() (*WordBankContext, error)
+	newContextHandler   func(context.Context) (*WordBankContext, error)
+	newContextTxHandler func() (*WordBankContext, error)
 }
 
 func New(connectionString string) (*WordBank, error) {
@@ -31,7 +33,7 @@ func newWithPG(connectionString string) (*WordBank, error) {
 
 	return &WordBank{
 		Word: newWordService(dbStore),
-		newContextHandler: func() (*WordBankContext, error) {
+		newContextTxHandler: func() (*WordBankContext, error) {
 			tx, err := dbStore.Tx()
 			if err != nil {
 				return nil, err
@@ -39,20 +41,46 @@ func newWithPG(connectionString string) (*WordBank, error) {
 			return &WordBankContext{
 				value: tx,
 				onCommit: func(ctx context.Context) error {
-					err := dbStore.CommitContext(ctx)
-					return err
+					return dbStore.CommitContext(ctx)
+				},
+				onRollback: func(ctx context.Context) error {
+					return dbStore.Rollback(ctx)
 				},
 			}, err
+		},
+		newContextHandler: func(ctx context.Context) (*WordBankContext, error) {
+			conn, err := dbStore.Conn(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return &WordBankContext{
+				value: conn,
+			}, nil
 		},
 	}, nil
 }
 
-func (wb *WordBank) NewContext() (*WordBankContext, error) {
+func (wb *WordBank) NewContext(ctx context.Context) (*WordBankContext, error) {
 	if wb.newContextHandler == nil {
 		return nil, errServerError(fmt.Errorf("no context available"))
 	}
 
-	return wb.newContextHandler()
+	return wb.newContextHandler(ctx)
+}
+
+func (wb *WordBank) RunTx(fn func(ctx *WordBankContext) error) error {
+	ctx, err := wb.newContextTxHandler()
+	if err != nil {
+		return err
+	}
+
+	err = fn(ctx)
+	if err != nil {
+		ctx.rollback()
+	} else {
+		ctx.commit()
+	}
+	return nil
 }
 
 type WordService interface {
@@ -60,6 +88,7 @@ type WordService interface {
 	InsertWord(ctx *WordBankContext, word *models.Word) error
 	QueryWords(ctx *WordBankContext, word models.WordQueryOptions, pagination *models.PaginationOptions) (*models.PageResult[*models.Word], error)
 	GetWord(ctx *WordBankContext, id uuid.UUID) (*models.Word, error)
+	GetWordsByIDs(ctx *WordBankContext, ids []uuid.UUID) ([]*models.Word, error)
 	UpdateWord(ctx *WordBankContext, updateOptions models.WordUpdateOptions) (*models.Word, error)
 	DeleteWord(ctx *WordBankContext, id uuid.UUID) error
 	RandomWords(ctx *WordBankContext, count int) ([]*models.Word, error)
@@ -71,4 +100,8 @@ type WordService interface {
 	DeleteFolder(ctx *WordBankContext, id uuid.UUID) error
 	GetFolder(ctx *WordBankContext, id uuid.UUID) (*models.Folder, error)
 	GetFolderContent(ctx *WordBankContext, folderID uuid.UUID) (*models.FolderContent, error)
+}
+
+type QuizService interface {
+	InsertQuizResult(ctx *WordBankContext, result *models.QuizResult) error
 }

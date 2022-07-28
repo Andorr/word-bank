@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Andorr/word-bank/internal/pg/utils"
 	"github.com/Andorr/word-bank/internal/arrayutil"
+	"github.com/Andorr/word-bank/internal/pg/utils"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"
@@ -23,6 +23,25 @@ func (t *PgTranslation) Value() (driver.Value, error) {
 	return utils.SliceToPgValue([]interface{}{t.ID, t.Val})
 }
 
+var _ utils.StringScan[*PgTranslation] = (*PgTranslation)(nil)
+
+func (t *PgTranslation) ScanString(value string) (*PgTranslation, error) {
+	raw := strings.Split(value, ",")
+	if len(raw) != 2 {
+		return nil, fmt.Errorf("unable to parse %s", value)
+	}
+
+	id, err := uuid.Parse(raw[0])
+	if err != nil {
+		return nil, err
+	}
+
+	return &PgTranslation{
+		ID:  id,
+		Val: strings.Trim(raw[1], "'"),
+	}, nil
+}
+
 type PgTranslationSlice []*PgTranslation
 
 func (pts *PgTranslationSlice) Scan(value interface{}) error {
@@ -31,38 +50,10 @@ func (pts *PgTranslationSlice) Scan(value interface{}) error {
 		return nil
 	}
 
-	source, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("unable to convert %T to PgTranslationSlice", value)
-	}
-
-	var pgTranslations PgTranslationSlice
-	tokens := strings.Split(string(source), "\",\"")
-	for _, token := range tokens {
-		// Remove unecessary tokens
-		for _, unwanted := range []string{"\\\"", "\"", "{", "}", "(", ")"} {
-			token = strings.ReplaceAll(token, unwanted, "")
-		}
-
-		raw := strings.Split(token, ",")
-
-		if len(raw) != 2 {
-			return fmt.Errorf("unable to parse %s", token)
-		}
-
-		id, err := uuid.Parse(raw[0])
-		if err != nil {
-			return err
-		}
-
-		pgTranslations = append(pgTranslations, &PgTranslation{
-			ID:  id,
-			Val: strings.Trim(raw[1], "'"),
-		})
-	}
-
-	*pts = pgTranslations
-	return nil
+	var arr []*PgTranslation
+	err := utils.PgScanArray(&arr, value)
+	*pts = arr
+	return err
 }
 
 type PgWord struct {

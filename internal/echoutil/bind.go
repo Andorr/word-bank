@@ -22,3 +22,12 @@ func BindWordUpdateOptions(e echo.Context) (*models.WordUpdateOptions, error) {
 	}
 	return options, nil
 }
+
+func BindFolderUpdateOptions(e echo.Context) (*models.FolderUpdateOptions, error) {
+	options := new(models.FolderUpdateOptions)
+	if err := e.Bind(options); err != nil {
+		e.Error(err)
+		return nil, err
+	}
+	return options, nil
+}

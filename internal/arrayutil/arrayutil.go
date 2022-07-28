@@ -8,6 +8,16 @@ func Map[T any, K any](arr []T, fn func(T) K) []K {
 	return o
 }
 
+func Filter[T any](arr []T, fn func(T) bool) []T {
+	o := make([]T, 0)
+	for _, value := range arr {
+		if fn(value) {
+			o = append(o, value)
+		}
+	}
+	return o
+}
+
 func Find[T any](arr []T, fn func(T) bool) *T {
 	for _, value := range arr {
 		if fn(value) {

@@ -1,6 +1,7 @@
 package wordbank
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -41,7 +42,7 @@ func (suite *TestWBSuite) TestInsertWord() {
 		},
 	}
 
-	ctx, err := suite.wb.NewContext()
+	ctx, err := suite.wb.NewContext(context.Background())
 	if err != nil {
 		suite.FailNowf("Error creating context", err.Error())
 		return
@@ -68,7 +69,7 @@ func (suite *TestWBSuite) TestInsertWord() {
 
 func (suite *TestWBSuite) TestWBQueryWords() {
 
-	ctx, err1 := suite.wb.NewContext()
+	ctx, err1 := suite.wb.NewContext(context.Background())
 	if err1 != nil {
 		suite.FailNowf("Error creating context", err1.Error())
 		return

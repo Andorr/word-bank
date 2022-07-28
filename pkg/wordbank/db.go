@@ -23,4 +23,7 @@ type DBStore interface {
 	UpdateFolder(q context.Context, updateOptions models.FolderUpdateOptions) (*models.Folder, error)
 	DeleteFolder(q context.Context, id uuid.UUID) error
 	GetFolder(q context.Context, id uuid.UUID) (*models.Folder, error)
+
+	// Quiz
+	InsertQuizResult(q context.Context, quiz *models.QuizResult) error
 }
