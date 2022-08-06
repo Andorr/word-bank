@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/Andorr/word-bank/api"
 )
@@ -14,14 +16,25 @@ func main() {
 	flag.Parse()
 
 	if *dbURI == "" {
-		log.Fatal("db connection string is required")
+		*dbURI = os.Getenv("WORDBANK_DB_URI")
+		if *dbURI == "" {
+			log.Fatal("db connection string is required")
+		}
 	}
 	if *token == "" {
-		log.Fatal("token is required")
+		*token = os.Getenv("WORDBANK_AUTH_TOKEN")
+		if *token == "" {
+			log.Fatal("token is required")
+		}
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
 
 	srv, err := api.NewServer(api.ServerOptions{
-		Addr:  ":8080",
+		Addr:  fmt.Sprintf(":%s", port),
 		DBURI: *dbURI,
 		Token: *token,
 	})

@@ -1,31 +1,32 @@
-FROM ekidd/rust-musl-builder:stable as builder
-ENV PKG_CONFIG_ALLOW_CROSS=1
+##
+## Build
+##
+FROM golang:1.18-buster AS build
 
-# Cache dependencies
-RUN USER=root cargo new --lib lib
-# COPY ./lib/Cargo.lock ./lib/Cargo.lock
-COPY ./lib/Cargo.toml ./lib/Cargo.toml
+WORKDIR /app
 
-RUN USER=root cargo new --bin api
-# COPY ./api/Cargo.lock ./api/Cargo.lock
-COPY ./api/Cargo.toml ./api/Cargo.toml
-RUN cd api && cargo build --release
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
 
-# Build lib for release
-RUN cd lib && rm -rf src/*.rs
-COPY ./lib/src ./lib/src
-RUN rm ./api/target/x86_64-unknown-linux-musl/release/deps/lib-*
-RUN rm ./api/target/x86_64-unknown-linux-musl/release/deps/liblib-*
-RUN cd api && cargo build --release
+COPY internal/ ./internal
+COPY pkg/ ./pkg
+COPY api/ ./api
+COPY cmd/api/ ./cmd/api
 
-# Build api for release
-RUN cd api && rm -rf src/*.rs
-COPY ./api/src ./api/src
-RUN rm ./api/target/x86_64-unknown-linux-musl/release/deps/api-*
-RUN cd api && cargo build --release
+RUN go build -o /bin/api ./cmd/api/main.go
 
-FROM alpine:latest
+##
+## Deploy
+##
+FROM gcr.io/distroless/base-debian10
 
-COPY --from=builder /home/rust/src/api/target/x86_64-unknown-linux-musl/release/api /usr/local/bin/api
+WORKDIR /
 
-ENTRYPOINT [ "api" ]
+COPY --from=build /bin/api /api
+
+EXPOSE 8080
+
+# USER nonroot:nonroot
+
+ENTRYPOINT ["/api"]

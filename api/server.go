@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	m "github.com/Andorr/word-bank/api/middleware"
 	"github.com/Andorr/word-bank/api/word"
 	"github.com/Andorr/word-bank/pkg/wordbank"
@@ -51,5 +53,6 @@ func NewServer(options ServerOptions) (*Server, error) {
 }
 
 func (s *Server) Run() error {
+	fmt.Printf("Server is running on %s\n", s.addr)
 	return s.e.Start(s.addr)
 }
