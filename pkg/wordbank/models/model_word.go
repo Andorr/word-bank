@@ -68,7 +68,7 @@ func (w *WordQueryOptions) Empty() {
 
 type WordUpdateOptions struct {
 	ID           uuid.UUID      `json:"id" validate:"required"`
-	Word         *string        `json:"word"`
+	Value        *string        `json:"value"`
 	Class        *WordClass     `json:"class"`
 	Tags         []WordTag      `json:"tags"`
 	Translations []*Translation `json:"translations"`

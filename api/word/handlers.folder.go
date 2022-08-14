@@ -56,8 +56,8 @@ func (ctrl *WordController) GetFolder(c echo.Context) error {
 		}
 
 		response := struct {
-			Data    *models.Folder
-			Content *models.FolderContent
+			Data    *models.Folder        `json:"data"`
+			Content *models.FolderContent `json:"content"`
 		}{
 			Data:    folder,
 			Content: content,

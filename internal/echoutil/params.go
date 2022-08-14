@@ -16,6 +16,7 @@ func BindPaginationOptions(c echo.Context) (*models.PaginationOptions, error) {
 	err := echo.QueryParamsBinder(c).
 		Int("page", &paginationOptions.Page).
 		Int("limit", &paginationOptions.Limit).
+		String("orderBy", &paginationOptions.OrderBy).
 		BindError()
 
 	return paginationOptions, err
@@ -71,6 +72,9 @@ func BindFolderQueryOptions(c echo.Context) (*models.FolderQueryOptions, error) 
 		Strings("words", &options.Words).
 		Strings("ids", &options.IDs).
 		BindError()
+	if err != nil {
+		return nil, err
+	}
 
 	opt := &models.FolderQueryOptions{
 		Query:  options.Query,
@@ -102,8 +106,11 @@ func BindParamUUID(c echo.Context, key string) (*uuid.UUID, error) {
 	if param == "" {
 		return nil, fmt.Errorf("parameter %s is required", key)
 	}
+	c.Logger().Infof("parameter %s: %s", key, param)
+	fmt.Printf("parameter %s: %s", key, param)
 	id, err := uuid.Parse(param)
 	if err != nil {
+		fmt.Printf("Error parsing %s: %s", key, err)
 		return nil, fmt.Errorf("parameter %s is not a valid UUID", key)
 	}
 	return &id, nil

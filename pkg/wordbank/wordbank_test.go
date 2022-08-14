@@ -14,6 +14,8 @@ import (
 type TestWBSuite struct {
 	suite.Suite
 	wb *WordBank
+
+	words []*models.Word
 }
 
 func (suite *TestWBSuite) SetupTest() {
@@ -31,7 +33,7 @@ func (suite *TestWBSuite) TearDownTest() {
 	// Tear down test
 }
 
-func (suite *TestWBSuite) TestInsertWord() {
+func (suite *TestWBSuite) TestInsertAndGetWord() {
 	// Insert word
 	word := &models.Word{
 		Value: "test",
@@ -65,6 +67,8 @@ func (suite *TestWBSuite) TestInsertWord() {
 		return
 	}
 	suite.Assert().Equal(word, word2)
+
+	suite.words = append(suite.words, word)
 }
 
 func (suite *TestWBSuite) TestWBQueryWords() {
@@ -94,6 +98,120 @@ func (suite *TestWBSuite) TestWBQueryWords() {
 	}
 }
 
-func TestWordBankCreateWord(t *testing.T) {
+func (suite *TestWBSuite) TestInsertAndGetFolder() {
+	ctx, err := suite.wb.NewContext(context.Background())
+	if err != nil {
+		suite.FailNowf("Error creating context", err.Error())
+		return
+	}
+
+	word := &models.Word{
+		Value: "test",
+		Class: models.WordClassNoun,
+		Tags:  []string{},
+		Translations: []*models.Translation{
+			{ID: uuid.New(), Value: "test"},
+		},
+	}
+	if err := suite.wb.Word.InsertWord(ctx, word); err != nil {
+		suite.FailNowf("Error inserting word", err.Error())
+		return
+	}
+	if word.ID == nil {
+		suite.FailNowf("Word ID is nil", "")
+		return
+	}
+	suite.words = append(suite.words, word)
+
+	// Insert folder
+	folder := &models.Folder{
+		Name:   "test",
+		Parent: nil,
+		Words: []uuid.UUID{
+			*word.ID,
+		},
+	}
+
+	if err := suite.wb.Word.InsertFolder(ctx, folder); err != nil {
+		suite.FailNowf("Error inserting folder", err.Error())
+		return
+	}
+
+	if folder.ID == nil {
+		suite.FailNowf("Folder ID is nil", "")
+		return
+	}
+	suite.Assert().NotEqual(uuid.Nil, *folder.ID)
+
+	word2, err := suite.wb.Word.GetFolder(ctx, *folder.ID)
+	if err != nil {
+		suite.FailNowf("Error getting folder", err.Error())
+		return
+	}
+	suite.Assert().Equal(folder, word2)
+}
+
+func (suite *TestWBSuite) TestWBQueryFolders() {
+	ctx, err1 := suite.wb.NewContext(context.Background())
+	if err1 != nil {
+		suite.FailNowf("Error creating context", err1.Error())
+		return
+	}
+
+	word := &models.Word{
+		Value: "random-test-name",
+		Class: models.WordClassNoun,
+		Tags:  []string{},
+		Translations: []*models.Translation{
+			{ID: uuid.New(), Value: "test"},
+		},
+	}
+	if err := suite.wb.Word.InsertWord(ctx, word); err != nil {
+		suite.FailNowf("Error inserting word", err.Error())
+		return
+	}
+	if word.ID == nil {
+		suite.FailNowf("Word ID is nil", "")
+		return
+	}
+	suite.words = append(suite.words, word)
+
+	// Insert folder
+	folder := &models.Folder{
+		Name:   "test",
+		Parent: nil,
+		Words: []uuid.UUID{
+			*word.ID,
+		},
+	}
+
+	if err := suite.wb.Word.InsertFolder(ctx, folder); err != nil {
+		suite.FailNowf("Error inserting folder", err.Error())
+		return
+	}
+
+	wordID := word.ID
+	folders, err2 := suite.wb.Word.QueryFolders(ctx, models.FolderQueryOptions{
+		Words: []uuid.UUID{*wordID},
+	}, &models.PaginationOptions{})
+	if err2 != nil {
+		suite.T().Logf("Error: %+v", err2)
+		suite.FailNowf("Error querying words", err2.Error())
+		return
+	}
+	if suite.Assert().NotNil(folders) {
+		if len(folders.Results) == 0 {
+			suite.FailNowf("No folders found", "")
+			return
+		}
+
+		for _, folder := range folders.Results {
+			suite.T().Logf("Folder: %+v", folder)
+			suite.Contains(folder.Words, *wordID)
+		}
+	}
+}
+
+func TestWordBank(t *testing.T) {
 	suite.Run(t, new(TestWBSuite))
 }

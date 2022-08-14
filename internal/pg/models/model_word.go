@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/Andorr/word-bank/internal/arrayutil"
-	"github.com/Andorr/word-bank/internal/pg/utils"
+	"github.com/Andorr/word-bank/internal/pg/pgutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"
@@ -20,10 +20,10 @@ type PgTranslation struct {
 }
 
 func (t *PgTranslation) Value() (driver.Value, error) {
-	return utils.SliceToPgValue([]interface{}{t.ID, t.Val})
+	return pgutil.SliceToPgValue([]interface{}{t.ID, t.Val})
 }
 
-var _ utils.StringScan[*PgTranslation] = (*PgTranslation)(nil)
+var _ pgutil.StringScan[*PgTranslation] = (*PgTranslation)(nil)
 
 func (t *PgTranslation) ScanString(value string) (*PgTranslation, error) {
 	raw := strings.Split(value, ",")
@@ -51,7 +51,7 @@ func (pts *PgTranslationSlice) Scan(value interface{}) error {
 	}
 
 	var arr []*PgTranslation
-	err := utils.PgScanArray(&arr, value)
+	err := pgutil.PgScanArray(&arr, value)
 	*pts = arr
 	return err
 }
@@ -67,22 +67,31 @@ type PgWord struct {
 	UpdatedAt *time.Time `db:"updated_at"`
 }
 
-// func (w *PgWord) Value() (driver.Value, error) {
-// 	return utils.SliceToPgValue([]interface{}{w.ID, w.Val, w.Type, w.Tags, w.Translations, w.CreatedAt, w.UpdatedAt})
-// }
+var PgWordColumns map[string]string = map[string]string{
+	"id":           "id",
+	"value":        "value",
+	"class":        "class",
+	"tags":         "tags",
+	"translations": "translations",
+	"createdAt":    "created_at",
+	"updatedAt":    "updated_at",
+}
 
 func PgWordFrom(other *models.Word) PgWord {
 	return PgWord{
 		ID:    other.ID,
 		Value: other.Value,
 		Class: other.Class,
-		Tags:  other.Tags,
-		Translations: arrayutil.Map(other.Translations, func(o *models.Translation) *PgTranslation {
-			return &PgTranslation{
-				ID:  o.ID,
-				Val: o.Value,
-			}
-		}),
+		Tags:  arrayutil.ValueOrDefault(other.Tags, []string{}),
+		Translations: arrayutil.Map(
+			arrayutil.ValueOrDefault(other.Translations, []*models.Translation{}),
+			func(o *models.Translation) *PgTranslation {
+				return &PgTranslation{
+					ID:  o.ID,
+					Val: o.Value,
+				}
+			},
+		),
 		CreatedAt: other.CreatedAt,
 		UpdatedAt: other.UpdatedAt,
 	}

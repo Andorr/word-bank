@@ -1,4 +1,4 @@
-package utils
+package pgutil
 
 import (
 	"fmt"
@@ -24,6 +24,10 @@ func PgScanArray[T StringScan[T]](dst *[]T, value interface{}) error {
 			// TODO: This does not work if 'unwanted' is in the middle of an actual value.
 			// For instance: ("My value with \" quote"). The middle \" should not be removed.
 			token = strings.ReplaceAll(token, unwanted, "")
+		}
+
+		if token == "" {
+			continue
 		}
 
 		elem, err := (*new(T)).ScanString(token)

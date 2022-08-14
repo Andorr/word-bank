@@ -1,5 +1,5 @@
 import { FetchError } from "./errors";
-import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, QuizResult, Word, WordQueryOptions } from "./models";
+import { Folder, FolderQueryOptions, FolderResult, PageResult, PaginationOptions, Quiz, QuizOptions, QuizResult, Word, WordObject, WordQueryOptions } from "./models";
 
 export default class WordBank {
 
@@ -18,9 +18,10 @@ export default class WordBank {
         .then((res) => {
             return res.json();
         })
-        .then((result: PageResult<Word>) => {
-            result.results = result.results.map(wObj => Word.fromObject(wObj));
-            return result;
+        .then((result: PageResult<WordObject>) => {
+            return Object.assign(result, {
+                results: result.results.map(wObj => Word.fromObject(wObj)),
+            })
         });
     }
 
@@ -31,12 +32,11 @@ export default class WordBank {
             undefined,
             {
                 ...word.toObject(),
-                translations: word.translations.map(it => it.value),
                 folder: folderId,
             },
         ).then((res) => {
             return res.json();
-        }).then((result: object) => {
+        }).then((result: WordObject) => {
             const newWord = Word.fromObject(result);
             
             const event = new CustomEvent('wb-word-insert', { detail: newWord });
@@ -53,7 +53,6 @@ export default class WordBank {
             undefined,
             {
                 ...word.toObject(),
-                translations: word.translations.map(it => it.value)
             },
         ).then(() => {
             return word;
@@ -94,7 +93,7 @@ export default class WordBank {
             const data = result;
             data.data = Folder.fromObject(data.data);
             data.content.folders = data.content.folders.map(f => Folder.fromObject(f));
-            data.content.words = data.content.words.map(w => Word.fromObject(w));
+            data.content.words = data.content.words.map((w) => Word.fromObject(w as any as WordObject));
             return data;
         });
     }

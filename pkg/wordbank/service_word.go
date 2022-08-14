@@ -82,7 +82,7 @@ func (c *wordServiceImpl) DeleteWord(ctx *WordBankContext, id uuid.UUID) error {
 	}
 
 	for _, folder := range folders.Results {
-		if len(folder.Words) == 0 {
+		if len(folder.Words) > 0 {
 			_, err = c.DB.UpdateFolder(ctx, models.FolderUpdateOptions{
 				ID:     *folder.ID,
 				Remove: []uuid.UUID{id},
@@ -170,6 +170,11 @@ func (c *wordServiceImpl) GetFolder(ctx *WordBankContext, id uuid.UUID) (*models
 }
 func (c *wordServiceImpl) GetFolderContent(ctx *WordBankContext, folderID uuid.UUID) (*models.FolderContent, error) {
 
+	folder, err := c.DB.GetFolder(ctx, folderID)
+	if err != nil {
+		return nil, errServerError(err)
+	}
+
 	folders, err := c.DB.QueryFolders(ctx, models.FolderQueryOptions{
 		Parent: &folderID,
 	}, nil)
@@ -177,13 +182,7 @@ func (c *wordServiceImpl) GetFolderContent(ctx *WordBankContext, folderID uuid.U
 		return nil, errServerError(err)
 	}
 
-	words, err := c.DB.GetWordsByIds(ctx,
-		arrayutil.Flatten(
-			arrayutil.Map(folders.Results, func(folder *models.Folder) []uuid.UUID {
-				return folder.Words
-			}),
-		),
-	)
+	words, err := c.DB.GetWordsByIds(ctx, folder.Words)
 	if err != nil {
 		return nil, errServerError(err)
 	}

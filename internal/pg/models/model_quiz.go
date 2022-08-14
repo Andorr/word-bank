@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Andorr/word-bank/internal/arrayutil"
-	"github.com/Andorr/word-bank/internal/pg/utils"
+	"github.com/Andorr/word-bank/internal/pg/pgutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 	"github.com/google/uuid"
 )
@@ -27,7 +27,7 @@ type PgQuizResult struct {
 }
 
 func (t *PgQuizQuestionResult) Value() (driver.Value, error) {
-	return utils.SliceToPgValue([]interface{}{t.WordID, t.NumCorrects, t.NumIncorrects})
+	return pgutil.SliceToPgValue([]interface{}{t.WordID, t.NumCorrects, t.NumIncorrects})
 }
 
 func (t *PgQuizQuestionResult) Scan(value interface{}) error {
@@ -46,20 +46,20 @@ func (t *PgQuizQuestionResult) ScanString(value string) (*PgQuizQuestionResult, 
 		return nil, err
 	}
 
-	numCorrects, err := strconv.ParseUint(tokens[1], 10, 64)
+	numCorrects, err := strconv.Atoi(tokens[1])
 	if err != nil {
 		return nil, err
 	}
 
-	numIncorrects, err := strconv.ParseUint(tokens[2], 10, 64)
+	numIncorrects, err := strconv.Atoi(tokens[2])
 	if err != nil {
 		return nil, err
 	}
 
 	return &PgQuizQuestionResult{
 		WordID:        id,
-		NumCorrects:   numCorrects,
-		NumIncorrects: numIncorrects,
+		NumCorrects:   uint64(numCorrects),
+		NumIncorrects: uint64(numIncorrects),
 	}, nil
 }
 
@@ -75,7 +75,7 @@ func (pts *PgQuizQuestionResultSlice) Scan(value interface{}) error {
 	}
 
 	var quizResult []*PgQuizQuestionResult
-	err := utils.PgScanArray(&quizResult, value)
+	err := pgutil.PgScanArray(&quizResult, value)
 	if err != nil {
 		return err
 	}

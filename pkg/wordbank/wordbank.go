@@ -33,6 +33,7 @@ func newWithPG(connectionString string) (*WordBank, error) {
 
 	return &WordBank{
 		Word: newWordService(dbStore),
+		Quiz: newQuizService(dbStore),
 		newContextTxHandler: func() (*WordBankContext, error) {
 			tx, err := dbStore.Tx()
 			if err != nil {
@@ -80,7 +81,7 @@ func (wb *WordBank) RunTx(fn func(ctx *WordBankContext) error) error {
 	} else {
 		ctx.commit()
 	}
-	return nil
+	return err
 }
 
 type WordService interface {

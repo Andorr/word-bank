@@ -1,9 +1,8 @@
 package api
 
 import (
-	"fmt"
-
 	m "github.com/Andorr/word-bank/api/middleware"
+	"github.com/Andorr/word-bank/api/quiz"
 	"github.com/Andorr/word-bank/api/word"
 	"github.com/Andorr/word-bank/pkg/wordbank"
 	"github.com/labstack/echo/v4"
@@ -29,9 +28,14 @@ type Controller interface {
 func NewServer(options ServerOptions) (*Server, error) {
 	e := echo.New()
 
+	e.Pre(middleware.RemoveTrailingSlash())
+
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
 	e.Use(m.AuthWithSingleToken(options.Token))
+
+	e.HideBanner = true
 
 	// Initialize wordbank
 	wb, err := wordbank.New(options.DBURI)
@@ -45,6 +49,11 @@ func NewServer(options ServerOptions) (*Server, error) {
 	}
 	wordCtrl.Routes(e)
 
+	quizCtrl := &quiz.QuizController{
+		WB: wb,
+	}
+	quizCtrl.Routes(e)
+
 	return &Server{
 		addr:  options.Addr,
 		dbURI: options.DBURI,
@@ -53,6 +62,5 @@ func NewServer(options ServerOptions) (*Server, error) {
 }
 
 func (s *Server) Run() error {
-	fmt.Printf("Server is running on %s\n", s.addr)
 	return s.e.Start(s.addr)
 }

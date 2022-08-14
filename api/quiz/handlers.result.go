@@ -38,7 +38,7 @@ func (ctrl *QuizController) InitQuiz(c echo.Context) error {
 	return ctrl.WB.RunTx(func(tx *wordbank.WordBankContext) error {
 
 		var words []*models.Word
-		if options.Words.Folders == nil {
+		if options.Words.Folders != nil {
 
 			folders, err := ctrl.WB.Word.QueryFolders(tx, models.FolderQueryOptions{
 				IDs: options.Words.Folders,

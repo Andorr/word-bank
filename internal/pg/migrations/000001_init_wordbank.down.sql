@@ -1,5 +1,5 @@
 DROP TABLE IF EXISTS folders;
 DROP TABLE IF EXISTS words;
 
-DROP TYPE IF EXISTS word_kind;
+DROP TYPE IF EXISTS word_class;
 DROP TYPE IF EXISTS translation;

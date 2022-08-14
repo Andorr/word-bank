@@ -7,6 +7,7 @@ import (
 
 	"github.com/Andorr/word-bank/internal/arrayutil"
 	pgmodels "github.com/Andorr/word-bank/internal/pg/models"
+	"github.com/Andorr/word-bank/internal/pg/pgutil"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
 
 	"github.com/google/uuid"
@@ -143,11 +144,7 @@ func (c *PgDBStore) QueryWords(ctx context.Context, options models.WordQueryOpti
 
 	countQb := qb.Count("*")
 
-	var page = 1
-	if pagination != nil && pagination.NotEmpty() {
-		qb = qb.Limit(pagination.Limit).Offset(pagination.Page * pagination.Limit)
-		page = pagination.Page
-	}
+	qb = qb.Pagination(pagination, pgmodels.PgWordColumns, "w.")
 
 	query, params := qb.Build()
 	words := make([]pgmodels.PgWord, 0)
@@ -165,7 +162,7 @@ func (c *PgDBStore) QueryWords(ctx context.Context, options models.WordQueryOpti
 
 	return &models.PageResult[*models.Word]{
 		Total: count,
-		Page:  page,
+		Page:  qb.GetPage(),
 		Count: len(words),
 		Results: arrayutil.Map(words, func(word pgmodels.PgWord) *models.Word {
 			return word.ToWord()
@@ -177,8 +174,8 @@ func (c *PgDBStore) UpdateWord(ctx context.Context, updateOptions models.WordUpd
 
 	qb := Update("words")
 
-	if updateOptions.Word != nil {
-		qb = qb.Set("value", *updateOptions.Word)
+	if updateOptions.Value != nil {
+		qb = qb.Set("value", *updateOptions.Value)
 	}
 	if updateOptions.Class != nil {
 		qb = qb.Set("class", *updateOptions.Class)
@@ -187,8 +184,8 @@ func (c *PgDBStore) UpdateWord(ctx context.Context, updateOptions models.WordUpd
 		qb = qb.Set("tags", pq.Array(updateOptions.Tags))
 	}
 	if updateOptions.Translations != nil {
-		qb = qb.Set("translations", pq.Array(arrayutil.Map(updateOptions.Translations, func(t *models.Translation) pgmodels.PgTranslation {
-			return pgmodels.PgTranslation{
+		qb = qb.Set("translations", pq.Array(arrayutil.Map(updateOptions.Translations, func(t *models.Translation) *pgmodels.PgTranslation {
+			return &pgmodels.PgTranslation{
 				ID:  t.ID,
 				Val: t.Value,
 			}
@@ -216,6 +213,10 @@ func (c *PgDBStore) DeleteWord(ctx context.Context, id uuid.UUID) error {
 }
 
 func (c *PgDBStore) GetWordsByIds(ctx context.Context, ids []uuid.UUID) ([]*models.Word, error) {
+	if len(ids) == 0 {
+		return []*models.Word{}, nil
+	}
+
 	var words []*pgmodels.PgWord
 	query, args, err := sqlx.In("SELECT * FROM words WHERE id::text IN (?)", ids)
 	if err != nil {
@@ -234,7 +235,7 @@ func (c *PgDBStore) GetWordsByIds(ctx context.Context, ids []uuid.UUID) ([]*mode
 
 func (c *PgDBStore) RandomWords(ctx context.Context, count int) ([]*models.Word, error) {
 	var words []*pgmodels.PgWord
-	err := c.driver(ctx).Select(&words, "SELEC * FROM words ORDER BY RANDOM() LIMIT ?", count)
+	err := c.driver(ctx).Select(&words, "SELECT * FROM words ORDER BY RANDOM() LIMIT $1", count)
 	if err != nil {
 		return nil, err
 	}
@@ -270,15 +271,20 @@ func (c *PgDBStore) QueryFolders(ctx context.Context, folder models.FolderQueryO
 	if folder.Parent != nil {
 		qb = qb.WhereOr("f.parent = ?", *folder.Parent)
 	}
-	if folder.Words != nil {
+	if folder.Words != nil && len(folder.Words) > 0 {
+		// qb = qb.WhereOr(fmt.Sprintf("f.words @> '{%s}'::uuid[]", strings.Join(
+		// 	arrayutil.Map(folder.Words, func(id uuid.UUID) string { return id.String() }), ",")))
+		// qb = qb.WhereOr("f.words @> ?",
+		// 	pq.Array(arrayutil.Map(folder.Words, func(id uuid.UUID) uuid.UUID { return id })))
 		qb = qb.WhereOr("f.words @> ?", pq.Array(folder.Words))
+	}
+	if folder.IDs != nil && len(folder.IDs) > 0 {
+		qb = qb.WhereInOR("f.id", pgutil.InterfaceSlice(folder.IDs))
 	}
 
 	countQb := qb.Count("*")
 
-	if pagination != nil && pagination.NotEmpty() {
-		qb = qb.Limit(pagination.Limit).Offset(pagination.Page * pagination.Limit)
-	}
+	qb = qb.Pagination(pagination, pgmodels.PgFolderColumns, "f.")
 
 	query, params := qb.Build()
 	folders := make([]pgmodels.PgFolder, 0)
@@ -296,7 +302,7 @@ func (c *PgDBStore) QueryFolders(ctx context.Context, folder models.FolderQueryO
 
 	return &models.PageResult[*models.Folder]{
 		Total: count,
-		Page:  pagination.Page,
+		Page:  qb.GetPage(),
 		Count: len(folders),
 		Results: arrayutil.Map(folders, func(f pgmodels.PgFolder) *models.Folder {
 			return f.ToFolder()
@@ -310,12 +316,12 @@ func (c *PgDBStore) UpdateFolder(ctx context.Context, updateOptions models.Folde
 
 	tx := c.driver(ctx)
 
-	err := tx.QueryRowx("SELECT * FROM folders WHERE id = ?", updateOptions.ID).StructScan(&folder)
+	err := tx.QueryRowx("SELECT * FROM folders WHERE id = $1", updateOptions.ID).StructScan(&folder)
 	if err != nil {
 		return nil, err
 	}
 
-	qb := Update("folder")
+	qb := Update("folders")
 	if updateOptions.Name != nil {
 		qb = qb.Set("name", *updateOptions.Name)
 	}
@@ -325,10 +331,10 @@ func (c *PgDBStore) UpdateFolder(ctx context.Context, updateOptions models.Folde
 	if len(updateOptions.Add) > 0 || len(updateOptions.Remove) > 0 {
 		words := folder.Words
 		if len(updateOptions.Add) > 0 {
-			words = append(words, updateOptions.Add...)
+			words = append(words, pgutil.UUIDArrayToString(updateOptions.Add)...)
 		}
 		if len(updateOptions.Remove) > 0 {
-			words = arrayutil.Difference(words, updateOptions.Remove)
+			words = arrayutil.Difference(words, pgutil.UUIDArrayToString(updateOptions.Remove))
 		}
 
 		qb = qb.Set("words", pq.Array(words))
@@ -359,7 +365,7 @@ func (c *PgDBStore) DeleteFolder(ctx context.Context, id uuid.UUID) error {
 
 func (c *PgDBStore) GetFolder(ctx context.Context, id uuid.UUID) (*models.Folder, error) {
 	var folder pgmodels.PgFolder
-	err := c.driver(ctx).QueryRowx("SELECT * FROM folders WHERE id = ?", id).StructScan(&folder)
+	err := c.driver(ctx).QueryRowx("SELECT * FROM folders WHERE id = $1", id).StructScan(&folder)
 	if err != nil {
 		return nil, err
 	}

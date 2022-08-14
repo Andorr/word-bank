@@ -5,6 +5,7 @@ import (
 
 	pgmodels "github.com/Andorr/word-bank/internal/pg/models"
 	"github.com/Andorr/word-bank/pkg/wordbank/models"
+	"github.com/lib/pq"
 )
 
 func (s *PgDBStore) InsertQuizResult(ctx context.Context, quizResult *models.QuizResult) error {
@@ -12,8 +13,8 @@ func (s *PgDBStore) InsertQuizResult(ctx context.Context, quizResult *models.Qui
 	pgQuizResult := pgmodels.PgQuizQuestionResultFrom(quizResult)
 
 	err := s.driver(ctx).
-		QueryRowx("INSERT INTO words (results) VALUES ($1) RETURNING *", pgQuizResult).
-		StructScan(pgQuizResult)
+		QueryRowx("INSERT INTO quiz_results (results) VALUES ($1) RETURNING *", pq.Array(pgQuizResult.Results)).
+		StructScan(&pgQuizResult)
 	if err != nil {
 		return err
 	}

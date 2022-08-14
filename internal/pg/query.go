@@ -3,6 +3,9 @@ package pg
 import (
 	"strconv"
 	"strings"
+
+	"github.com/Andorr/word-bank/pkg/wordbank/models"
+	"github.com/google/uuid"
 )
 
 type joinType string
@@ -125,6 +128,16 @@ func (q Query) WhereOr(where string, parameters ...interface{}) Query {
 	return q
 }
 
+func (q Query) WhereIn(column string, values []interface{}) Query {
+	q.conditions = append(q.conditions, condition{column + " IN (" + strings.Repeat("?,", len(values)-1) + "?)", opAND, nil, values})
+	return q
+}
+
+func (q Query) WhereInOR(column string, values []interface{}) Query {
+	q.conditions = append(q.conditions, condition{column + " IN (" + strings.Repeat("?,", len(values)-1) + "?)", opOR, nil, values})
+	return q
+}
+
 func (q Query) WhereGroup(fn func(c *condition)) Query {
 	cond := condition{"", opAND, nil, nil}
 	fn(&cond)
@@ -147,6 +160,28 @@ func (q Query) Offset(offset int) Query {
 func (q Query) Limit(limit int) Query {
 	q.limit = &limit
 	return q
+}
+
+func (q Query) Pagination(options *models.PaginationOptions, mapper map[string]string, prefix string) Query {
+	if options != nil && options.Limit > 0 {
+		if options.Page == 0 {
+			options.Page = 1
+		}
+		q = q.Limit(options.Limit).Offset((options.Page - 1) * options.Limit)
+	}
+	if options != nil && options.OrderBy != "" && mapper[options.OrderByField()] != "" {
+		q = q.OrderBy(prefix + mapper[options.OrderByField()] + " " + string(options.OrderByDirection()))
+	} else {
+		q = q.OrderBy(prefix + "created_at ASC")
+	}
+	return q
+}
+
+func (q Query) GetPage() int {
+	if q.offset != nil && q.limit != nil {
+		return *q.offset / *q.limit + 1
+	}
+	return 1
 }
 
 func (q Query) Build() (string, []interface{}) {
@@ -198,7 +233,7 @@ func (q Query) Build() (string, []interface{}) {
 		query.WriteString(strconv.Itoa(*q.limit))
 	}
 
-	return rebind(query.String()), params
+	return rebind(query.String()), processParams(params)
 }
 
 func (q *Query) buildWhere(query *strings.Builder, params *[]interface{}) {
@@ -229,6 +264,17 @@ func rebind(query string) string {
 		}
 	}
 	return query
+}
+
+func processParams(params []interface{}) []interface{} {
+	for i, param := range params {
+		if value, ok := param.(uuid.UUID); ok {
+			params[i] = value.String()
+		} else if value, ok := param.(*uuid.UUID); ok {
+			params[i] = value.String()
+		}
+	}
+	return params
 }
 
 type KeyValue struct {
@@ -305,7 +351,7 @@ func (u UpdateQuery) Build() (string, []any) {
 		sb.WriteString(*u.returning)
 	}
 
-	return rebind(sb.String()), params
+	return rebind(sb.String()), processParams(params)
 }
 
 type DeleteQuery struct {
@@ -345,5 +391,5 @@ func (u DeleteQuery) Build() (string, []any) {
 
 	u.query.buildWhere(&sb, &params)
 
-	return rebind(sb.String()), params
+	return rebind(sb.String()), processParams(params)
 }

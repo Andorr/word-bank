@@ -16,6 +16,7 @@ func TestBindPaginationOptionsNormal(t *testing.T) {
 	values := req.URL.Query()
 	values.Add("page", "1")
 	values.Add("limit", "10")
+	values.Add("orderBy", "createdAt")
 	req.URL.RawQuery = values.Encode()
 	rec := httptest.NewRecorder()
 
@@ -29,6 +30,7 @@ func TestBindPaginationOptionsNormal(t *testing.T) {
 
 	assert.Equal(t, 1, paginationOptions.Page)
 	assert.Equal(t, 10, paginationOptions.Limit)
+	assert.Equal(t, "createdAt", paginationOptions.OrderBy)
 
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	rec = httptest.NewRecorder()
@@ -37,7 +39,7 @@ func TestBindPaginationOptionsNormal(t *testing.T) {
 	req.URL.RawQuery = values.Encode()
 	c = e.NewContext(req, rec)
 
-	paginationOptions, err = BindPaginationOptions(c)
+	_, err = BindPaginationOptions(c)
 	assert.Error(t, err)
 
 }

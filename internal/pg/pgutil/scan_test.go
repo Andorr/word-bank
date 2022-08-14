@@ -1,4 +1,4 @@
-package utils
+package pgutil
 
 import (
 	"fmt"
@@ -68,5 +68,17 @@ func TestPgScanArrayMultipleElements(t *testing.T) {
 	assert.Equal(t, "a7c92157-1577-4cde-aec2-2295285bb9b6", tests[1].ID)
 	assert.Equal(t, 30, tests[1].A)
 	assert.Equal(t, 20, tests[1].B)
+}
 
+func TestPgScanArrayEmpty(t *testing.T) {
+
+	input := "{}"
+
+	var tests []*test
+	err := PgScanArray(&tests, []byte(input))
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	assert.Equal(t, 0, len(tests))
 }
