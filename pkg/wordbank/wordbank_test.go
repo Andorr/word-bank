@@ -212,6 +212,38 @@ func (suite *TestWBSuite) TestWBQueryFolders() {
 	}
 }
 
+func (suite *TestWBSuite) TestWBInsertQuizResult() {
+	ctx, err := suite.wb.NewContext(context.Background())
+	if err != nil {
+		suite.FailNowf("Error creating context", err.Error())
+		return
+	}
+
+	wordID := uuid.New()
+	quizResult := &models.QuizResult{
+		ID: uuid.New(),
+		Results: []*models.QuizQuestionResult{
+			{
+				WordID:        wordID,
+				NumCorrects:   1,
+				NumIncorrects: 2,
+			},
+		},
+	}
+	if err := suite.wb.Quiz.InsertQuizResult(ctx, quizResult); err != nil {
+		suite.FailNowf("Error inserting quiz result", err.Error())
+		return
+	}
+
+	quizResult.ID = uuid.New()
+	quizResult.Results = make([]*models.QuizQuestionResult, 0)
+	quizResult.CreatedAt = nil
+	if err := suite.wb.Quiz.InsertQuizResult(ctx, quizResult); err != nil {
+		suite.FailNowf("Error inserting quiz result", err.Error())
+		return
+	}
+}
+
 func TestWordBank(t *testing.T) {
 	suite.Run(t, new(TestWBSuite))
 }

@@ -1,4 +1,4 @@
-import { QuizMode, QuizOptions, QuizQuestionPolicy, QuizResult, QuizWord, Word } from "@/lib/models";
+import { QuizMode, QuizOptions, QuizQuestionPolicy, QuizResult, QuizWordResults, Word } from "@/lib/models";
 import { alertController } from "@ionic/vue";
 
 export enum QuizStatus {
@@ -133,7 +133,7 @@ export class QuizState {
     toQuizResult(): QuizResult {
         return {
             id: this.id,
-            questions: this.questions.filter(q => q.numCorrects > 0 || q.numIncorrects > 0).map(q => ({ wordId: q.wordId, numCorrects: q.numCorrects, numIncorrects: q.numIncorrects }) as QuizWord ), 
+            results: this.questions.filter(q => q.numCorrects > 0 || q.numIncorrects > 0).map(q => ({ wordId: q.wordId, numCorrects: q.numCorrects, numIncorrects: q.numIncorrects }) as QuizWordResults ), 
             createdAt: new Date().toISOString(),         
         }
     }

@@ -161,11 +161,11 @@ export type Quiz = {
 
 export type QuizResult = {
     id: string;
-    questions: QuizWord[];
+    results: QuizWordResults[];
     createdAt: string;
 }
 
-export type QuizWord = {
+export type QuizWordResults = {
     wordId: string;
     numCorrects: number;
     numIncorrects: number;
