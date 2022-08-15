@@ -44,7 +44,7 @@
           </ion-text>
           <ion-text>
             <h1 v-if="currentQuestion" class="text-xs text-center">
-              {{ currentQuestion.kind }}
+              {{ currentQuestion.classType }}
             </h1>
           </ion-text>
           <ion-text v-if="revealAnswer">
@@ -161,7 +161,7 @@ export default defineComponent({
     }
 
     const quizState = ref<QuizState>(
-      new QuizState(quiz.value.words, quiz.value.options)
+      new QuizState(quiz.value.id, quiz.value.words, quiz.value.options)
     );
     const currentQuestion = ref<Question | null>(quizState.value.startQuiz());
     const input = ref("");

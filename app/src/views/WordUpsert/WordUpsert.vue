@@ -35,7 +35,7 @@
           <icon-btn slot="end">
             <ion-icon :icon="icons.add" @click="addTranslation" />
           </icon-btn>
-          <template v-for="t in translations" :key="t.id">
+          <div v-for="t in translations" :key="t.id">
             <div class="grid grid-cols-7 px-6">
               <ion-input
                 class="col-span-6"
@@ -46,7 +46,7 @@
                 <ion-icon :icon="icons.trash" />
               </icon-btn>
             </div>
-          </template>
+          </div>
         </ion-item>
         <div class="flex-grow" />
         <div class="mx-4 mb-4">
@@ -170,10 +170,10 @@ export default defineComponent({
       this.isLoading = true;
 
       const word = Word.fromObject({
-        id: this.id,
+        id: this.id as string,
         value: this.word,
-        kind: this.wordType,
-        translations: this.translations.filter((t) => t.value),
+        class: this.wordType,
+        translations: this.translations,
       });
 
       const actions = this.id ? ACTIONS.WORD_UPDATE : ACTIONS.WORD_INSERT;
@@ -232,7 +232,7 @@ export default defineComponent({
       this.translations = word.translations.map(
         (t) => new Translation(t.id, t.value)
       );
-      this.wordType = word.kind;
+      this.wordType = word.classType;
     },
   },
   mounted() {

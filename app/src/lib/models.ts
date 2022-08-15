@@ -16,29 +16,37 @@ export class Translation {
     }
 }
 
+export interface WordObject {
+    id: string;
+    class: string;
+    value: string;
+    translations: Translation[];
+}
+
+
 export class Word {
 
     id: string;
-    kind: string;
+    classType: string;
     value: string;
     translations: Translation[];
 
-    constructor(id: string, value: string, kind: string, translations: Translation[]) {
+    constructor(id: string, value: string, classType: string, translations: Translation[]) {
         this.id = id;
         this.value = value;
-        this.kind = kind;
+        this.classType = classType;
         this.translations = translations;
     }
 
-    static fromObject(object: Record<string, any>) {
-        return new Word(object.id, object.value, object.kind, object.translations);
+    static fromObject(object: WordObject): Word {
+        return new Word(object.id, object.value, object.class, object.translations);
     }
 
-    toObject(): Record<string, any> {
+    toObject(): WordObject {
         return {
             id: this.id,
             value: this.value,
-            kind: this.kind,
+            class: this.classType,
             translations: this.translations
         }
     }
@@ -108,7 +116,7 @@ export type PageResult<T> = {
 export type WordQueryOptions = {
     query?: string;
     word?: string;
-    kind?: string;
+    class?: string;
     tags?: string[];
 }
 
@@ -153,11 +161,11 @@ export type Quiz = {
 
 export type QuizResult = {
     id: string;
-    questions: QuizWord[];
+    results: QuizWordResults[];
     createdAt: string;
 }
 
-export type QuizWord = {
+export type QuizWordResults = {
     wordId: string;
     numCorrects: number;
     numIncorrects: number;

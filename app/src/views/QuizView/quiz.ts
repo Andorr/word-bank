@@ -1,4 +1,4 @@
-import { QuizMode, QuizOptions, QuizQuestionPolicy, QuizResult, QuizWord, Word } from "@/lib/models";
+import { QuizMode, QuizOptions, QuizQuestionPolicy, QuizResult, QuizWordResults, Word } from "@/lib/models";
 import { alertController } from "@ionic/vue";
 
 export enum QuizStatus {
@@ -17,7 +17,7 @@ export type Question = {
     wordId: string;
     question: string;
     answers: string[];
-    kind: string;
+    classType: string;
     numIncorrects: number;
     numCorrects: number;
 };
@@ -34,6 +34,7 @@ export type QuizStats = {
 }
 
 export class QuizState {
+    id: string;
     questions: Question[];
     status: QuizStatus;
     questionIndex: number;
@@ -41,7 +42,8 @@ export class QuizState {
 
     stats: QuizStats
 
-    constructor(questions: Word[], options: QuizOptions) {
+    constructor(id: string, questions: Word[], options: QuizOptions) {
+        this.id = id;
         this.questions = this.buildQuestions(questions, options.policy);
         this.status = QuizStatus.NotStarted;
         this.questionIndex = 0;
@@ -130,15 +132,15 @@ export class QuizState {
 
     toQuizResult(): QuizResult {
         return {
-            id: "",
-            questions: this.questions.filter(q => q.numCorrects > 0 || q.numIncorrects > 0).map(q => ({ wordId: q.wordId, numCorrects: q.numCorrects, numIncorrects: q.numIncorrects }) as QuizWord ), 
+            id: this.id,
+            results: this.questions.filter(q => q.numCorrects > 0 || q.numIncorrects > 0).map(q => ({ wordId: q.wordId, numCorrects: q.numCorrects, numIncorrects: q.numIncorrects }) as QuizWordResults ), 
             createdAt: new Date().toISOString(),         
         }
     }
 
     private buildQuestions(words: Word[], policy?: QuizQuestionPolicy): Question[] {
         return words.map((w) => {
-            const question: Question = { question: "", answers: [], numCorrects: 0, numIncorrects: 0, kind: w.kind, wordId: w.id };
+            const question: Question = { question: "", answers: [], numCorrects: 0, numIncorrects: 0, classType: w.classType, wordId: w.id };
             switch (
             policy ||
             QuizQuestionPolicy.WordToTranslations

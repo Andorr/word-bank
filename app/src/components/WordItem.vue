@@ -10,7 +10,7 @@
       <ion-ripple-effect></ion-ripple-effect>
     </div>
     <p slot="end" class="text-gray-400 text-xs" :class="wordTypeColor">
-      {{ word.kind }}
+      {{ word.classType }}
     </p>
   </ion-item>
 </template>
@@ -48,12 +48,16 @@ export default defineComponent({
     IonRippleEffect,
   },
   props: {
-    word: Word,
+    word: {
+      type: Word,
+      required: true,
+    },
   },
   computed: {
     wordTypeColor(): string {
       return (
-        WORDTYPE_COLOR[this.word ? this.word.kind : ""] || WORDTYPE_COLOR.NONE
+        WORDTYPE_COLOR[this.word ? this.word.classType : ""] ||
+        WORDTYPE_COLOR.NONE
       );
     },
   },

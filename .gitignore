@@ -1,2 +1,5 @@
 .keys
 scripts
+rust
+.env
+.vscode
