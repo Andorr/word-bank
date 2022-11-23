@@ -4,7 +4,7 @@ workflows:
         name: Ionic App
         working_directory: app
         max_build_duration: 120
-        instance_type: mac_mini
+        instance_type: mac_mini_m1
         environment:
             groups:
                 - app_store_credentials # <-- (Includes APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY)
@@ -21,7 +21,7 @@ workflows:
                 - push
                 - pull_request
             branch_patterns:
-                - pattern: '*'
+                - pattern: "*"
                   include: true
                   source: true
         scripts:
@@ -34,8 +34,9 @@ workflows:
             - name: Build web app
               script: ionic build
             - name: Update dependencies and copy web assets to native project
-              script: npx cap sync # <- update native dependencies and copy web assets to native project          
-                # npx cap copy # <- use this is you don't need to update native dependencies
+              script:
+                  npx cap sync # <- update native dependencies and copy web assets to native project
+                  # npx cap copy # <- use this is you don't need to update native dependencies
             - name: Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
               script: keychain initialize
               # - name: Set up Provisioning profiles from environment variables (Use with manual code signing)
@@ -46,17 +47,18 @@ workflows:
               #     echo ${FCI_PROVISIONING_PROFILE} | base64 --decode > "$PROFILE_PATH"
               #     echo "Saved provisioning profile $PROFILE_PATH"
             - name: Fetch signing files
-              script: app-store-connect fetch-signing-files $(xcode-project detect-bundle-id) --type IOS_APP_DEVELOPMENT --create --verbose
-                # app-store-connect fetch-signing-files "com.nevercode.ncionicapp" --type IOS_APP_STORE --create
+              script:
+                  app-store-connect fetch-signing-files $(xcode-project detect-bundle-id) --type IOS_APP_DEVELOPMENT --create --verbose
+                  # app-store-connect fetch-signing-files "com.nevercode.ncionicapp" --type IOS_APP_STORE --create
             - name: Add certificates to keychain
               script: keychain add-certificates
             - name: Increment build number
               script: |
-                #!/bin/sh
-                set -e
-                set -x
-                cd ios/App
-                agvtool new-version -all $(($BUILD_NUMBER +1))          
+                  #!/bin/sh
+                  set -e
+                  set -x
+                  cd ios/App
+                  agvtool new-version -all $(($BUILD_NUMBER +1))
             - name: Set up code signing settings on Xcode project
               script: xcode-project use-profiles
             - name: Build ipa for distribution
@@ -71,10 +73,10 @@ workflows:
         #         api_key: $APP_STORE_CONNECT_PRIVATE_KEY      # Contents of the API key
         #         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER    # Alphanumeric value that identifies the API key
         #         issuer_id: $APP_STORE_CONNECT_ISSUER_ID      # Alphanumeric value that identifies who created the API key
-        #         submit_to_testflight: false        # Optional boolean, defaults to false. Whether or not to submit the uploaded build to TestFlight to automatically enroll your build to beta testers.  
+        #         submit_to_testflight: false        # Optional boolean, defaults to false. Whether or not to submit the uploaded build to TestFlight to automatically enroll your build to beta testers.
         #     email:
         #         recipients:
         #             - andershallemiversen@hotmail.com
         #         notify:
         #             success: false     # To not receive a notification when a build succeeds
-        #             failure: true   
+        #             failure: true
